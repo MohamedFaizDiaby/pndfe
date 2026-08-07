@@ -1,0 +1,92 @@
+// PNDFE - Etape 1 : Identite numerique des travailleurs et des agences
+// NB: SQLite est utilise en developpement local (aucun serveur a installer).
+// En production, changer "provider" en "postgresql" et DATABASE_URL vers l'instance
+// PostgreSQL du Ministere - le reste du schema reste identique.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite ne supporte pas les enums natifs Prisma : les valeurs sont stockees
+// en String et validees cote application via src/common/enums.ts (TS enums).
+// Role: TRAVAILLEUR | AGENCE | ADMIN
+// StatutAgrement: EN_ATTENTE | APPROUVE | REJETE
+// StatutVerificationIdentite: EN_ATTENTE | VERIFIE | REJETE
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
+
+  travailleur Travailleur?
+  agence      Agence?
+}
+
+model Travailleur {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  nom                  String
+  prenoms              String
+  dateNaissance        DateTime
+  telephone            String
+  metier               String // ex: BTP, gardiennage, domestique, restauration...
+  numeroPieceIdentite  String
+  photoUrl             String?
+  pieceIdentiteUrl     String?
+
+  qrCodeToken          String @unique @default(uuid())
+  statutVerification   String @default("EN_ATTENTE")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Agence {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  raisonSociale    String
+  registreCommerce String
+  telephone        String
+  adresse          String
+  // Secteurs d'activite stockes en CSV ("BTP,GARDIENNAGE") - liste geree cote service.
+  secteurs         String
+
+  documents       Document[]
+  demandeAgrement DemandeAgrement?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  agenceId  String
+  agence    Agence   @relation(fields: [agenceId], references: [id], onDelete: Cascade)
+  type      String // ex: RCCM, ATTESTATION_FISCALE, PIECE_DIRIGEANT
+  nomFichier String
+  url       String
+  createdAt DateTime @default(now())
+}
+
+model DemandeAgrement {
+  id                 String    @id @default(uuid())
+  agenceId           String    @unique
+  agence             Agence    @relation(fields: [agenceId], references: [id], onDelete: Cascade)
+  statut             String    @default("EN_ATTENTE")
+  commentaireAdmin   String?
+  traiteParUserId    String?
+  dateTraitement     DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
