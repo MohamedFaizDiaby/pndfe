@@ -1,18 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-
-function extractToken(scanned: string): string {
-  try {
-    const url = new URL(scanned);
-    // Le QR encode une URL avec routage par hash: https://host/#/verifier/<token>
-    const source = url.hash ? url.hash.replace(/^#/, '') : url.pathname;
-    const parts = source.split('/').filter(Boolean);
-    return parts[parts.length - 1] || scanned;
-  } catch {
-    return scanned;
-  }
-}
+import { extractToken } from '../utils/qr';
 
 export function QrScanner() {
   const navigate = useNavigate();

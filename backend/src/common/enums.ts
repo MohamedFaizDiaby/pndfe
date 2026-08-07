@@ -17,3 +17,9 @@ export enum StatutVerificationIdentite {
   VERIFIE = 'VERIFIE',
   REJETE = 'REJETE',
 }
+
+export enum StatutContrat {
+  ENVOYE = 'ENVOYE',
+  SIGNE = 'SIGNE',
+  REFUSE = 'REFUSE',
+}

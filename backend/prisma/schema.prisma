@@ -1,4 +1,5 @@
 // PNDFE - Etape 1 : Identite numerique des travailleurs et des agences
+// PNDFE - Etape 2 : Contrats de travail electroniques + declarations CNPS/CMU
 // NB: SQLite est utilise en developpement local (aucun serveur a installer).
 // En production, changer "provider" en "postgresql" et DATABASE_URL vers l'instance
 // PostgreSQL du Ministere - le reste du schema reste identique.
@@ -17,6 +18,7 @@ datasource db {
 // Role: TRAVAILLEUR | AGENCE | ADMIN
 // StatutAgrement: EN_ATTENTE | APPROUVE | REJETE
 // StatutVerificationIdentite: EN_ATTENTE | VERIFIE | REJETE
+// StatutContrat: ENVOYE | SIGNE | REFUSE
 
 model User {
   id           String   @id @default(uuid())
@@ -46,6 +48,8 @@ model Travailleur {
   qrCodeToken          String @unique @default(uuid())
   statutVerification   String @default("EN_ATTENTE")
 
+  contrats Contrat[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -64,6 +68,7 @@ model Agence {
 
   documents       Document[]
   demandeAgrement DemandeAgrement?
+  contrats        Contrat[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,4 +94,43 @@ model DemandeAgrement {
   dateTraitement     DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+}
+
+model Contrat {
+  id String @id @default(uuid())
+
+  agenceId      String
+  agence        Agence      @relation(fields: [agenceId], references: [id], onDelete: Cascade)
+  travailleurId String
+  travailleur   Travailleur @relation(fields: [travailleurId], references: [id], onDelete: Cascade)
+
+  typeContrat String // BTP, GARDIENNAGE, DOMESTIQUE, RESTAURATION, AGRICULTURE, MANUTENTION, AUTRE
+  poste       String
+  lieuTravail String
+  salaireBrut Float
+  dateDebut   DateTime
+  dateFin     DateTime?
+
+  statut String @default("ENVOYE")
+
+  signatureTravailleurNom String? // nom saisi par le travailleur en guise de signature electronique
+  signatureTravailleurAt  DateTime?
+  motifRefus              String?
+  pdfUrl                  String?
+
+  declaration DeclarationCnps?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DeclarationCnps {
+  id     String  @id @default(uuid())
+
+  contratId String  @unique
+  contrat   Contrat @relation(fields: [contratId], references: [id], onDelete: Cascade)
+
+  numeroCnps      String   @unique
+  numeroCmu       String   @unique
+  dateDeclaration DateTime @default(now())
 }

@@ -31,4 +31,9 @@ export class AdminController {
   statsTravailleurs() {
     return this.adminService.statsTravailleurs();
   }
+
+  @Get('declarations')
+  listDeclarations() {
+    return this.adminService.listDeclarations();
+  }
 }

@@ -10,6 +10,8 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { Login } from './pages/Login';
 import { QrScanner } from './pages/QrScanner';
 import { VerifierQr } from './pages/VerifierQr';
+import { NouveauContrat } from './pages/NouveauContrat';
+import { ContratDetail } from './pages/ContratDetail';
 
 export default function App() {
   return (
@@ -55,6 +57,22 @@ export default function App() {
           element={
             <ProtectedRoute role="AGENCE">
               <AgenceDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/agence/contrats/nouveau"
+          element={
+            <ProtectedRoute role="AGENCE">
+              <NouveauContrat />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contrats/:id"
+          element={
+            <ProtectedRoute role={['AGENCE', 'TRAVAILLEUR', 'ADMIN']}>
+              <ContratDetail />
             </ProtectedRoute>
           }
         />

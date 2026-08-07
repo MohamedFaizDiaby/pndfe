@@ -37,9 +37,29 @@ export class AdminService {
       by: ['metier'],
       _count: { _all: true },
     });
+    const totalContratsSignes = await this.prisma.contrat.count({ where: { statut: 'SIGNE' } });
+    const totalDeclarations = await this.prisma.declarationCnps.count();
+
     return {
       totalTravailleurs: total,
       parMetier: parMetier.map((m) => ({ metier: m.metier, count: m._count._all })),
+      totalContratsSignes,
+      totalDeclarations,
     };
+  }
+
+  async listDeclarations() {
+    const declarations = await this.prisma.declarationCnps.findMany({
+      include: {
+        contrat: {
+          include: {
+            agence: { select: { raisonSociale: true } },
+            travailleur: { select: { nom: true, prenoms: true, metier: true } },
+          },
+        },
+      },
+      orderBy: { dateDeclaration: 'desc' },
+    });
+    return declarations;
   }
 }

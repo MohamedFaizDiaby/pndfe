@@ -18,7 +18,7 @@ const ctx = await esbuild.context({
 
 await ctx.watch();
 
-const port = 5173;
+const port = 5190;
 const { host } = await ctx.serve({ servedir: 'public', port });
 
 console.log(`\nPNDFE - Front-end de developpement disponible sur http://localhost:${port}\n`);

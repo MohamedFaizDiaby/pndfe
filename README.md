@@ -1,10 +1,13 @@
 # PNDFE — Plateforme Numerique de l'Emploi Formel
 
-MVP de l'**Etape 1** du cahier des charges PNDFE (Ministere de l'Emploi et de la
-Protection Sociale, Cote d'Ivoire) : **identite numerique des travailleurs et des
-agences d'emploi**.
+MVP des **Etapes 1 et 2** du cahier des charges PNDFE (Ministere de l'Emploi et
+de la Protection Sociale, Cote d'Ivoire) : **identite numerique** des
+travailleurs et des agences, puis **contrats de travail electroniques** et
+**declaration CNPS/CMU automatique**.
 
-## Ce qui est implemente (Etape 1 du calendrier officiel)
+## Ce qui est implemente
+
+### Etape 1 — Identite numerique
 
 - Inscription travailleur (profil, photo, piece d'identite) + generation d'une
   carte professionnelle avec **QR Code** unique et scannable.
@@ -15,9 +18,26 @@ agences d'emploi**.
 - Tableau de bord de pilotage (nombre de travailleurs par secteur).
 - Authentification par role (TRAVAILLEUR / AGENCE / ADMIN) avec JWT.
 
-Les etapes suivantes du cahier des charges (contrats electroniques, paiement
-Mobile Money, bulletins de paie, declarations CNPS/CMU) ne sont pas couvertes
-par cette version.
+### Etape 2 — Contrats et protection sociale
+
+- Creation de contrat de travail par une agence agreee (scan/saisie du QR du
+  travailleur, poste, secteur, salaire, dates, lieu de travail).
+- Signature electronique simplifiee par le travailleur (nom saisi + acceptation
+  explicite des conditions) depuis son tableau de bord.
+- Generation automatique du **PDF du contrat signe**, telechargeable.
+- **Declaration CNPS/CMU automatique** a la signature (numeros generes,
+  visibles par le Ministere).
+- Suivi des contrats (en attente / signe / refuse) cote agence et travailleur.
+- Tableau de bord Ministere enrichi : contrats signes, declarations CNPS/CMU.
+
+Les etapes suivantes du cahier des charges (paiement Mobile Money, bulletins de
+paie) ne sont pas couvertes par cette version.
+
+> **Limite assumee** : la signature electronique de l'Etape 2 est une signature
+> simple (nom saisi + consentement horodate), suffisante pour une demonstration
+> fonctionnelle. Une mise en production s'appuierait sur un prestataire de
+> signature electronique agree (ex. DocuSign, Yousign) pour la valeur probatoire
+> renforcee mentionnee dans le cahier des charges.
 
 ## Stack technique
 
@@ -67,14 +87,14 @@ Compte Ministere par defaut (cree par le seed) :
 ```bash
 cd frontend
 npm install
-npm run dev    # http://localhost:5173
+npm run dev    # http://localhost:5190
 ```
 
 ## Structure du projet
 
 ```
 pndfe/
-  backend/     API NestJS (auth, travailleurs, agences, admin)
+  backend/     API NestJS (auth, travailleurs, agences, contrats, admin)
     prisma/    schema.prisma, migrations, seed
     src/
   frontend/    Application web React (mobile-first)

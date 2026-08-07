@@ -15,6 +15,20 @@ interface Agence {
 interface Stats {
   totalTravailleurs: number;
   parMetier: { metier: string; count: number }[];
+  totalContratsSignes: number;
+  totalDeclarations: number;
+}
+
+interface Declaration {
+  id: string;
+  numeroCnps: string;
+  numeroCmu: string;
+  dateDeclaration: string;
+  contrat: {
+    poste: string;
+    agence: { raisonSociale: string };
+    travailleur: { nom: string; prenoms: string; metier: string };
+  };
 }
 
 const FILTERS = [
@@ -27,6 +41,7 @@ const FILTERS = [
 export function AdminDashboard() {
   const [agences, setAgences] = useState<Agence[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [declarations, setDeclarations] = useState<Declaration[]>([]);
   const [filter, setFilter] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -39,6 +54,10 @@ export function AdminDashboard() {
     api
       .get('/admin/stats/travailleurs')
       .then((res) => setStats(res.data))
+      .catch(() => {});
+    api
+      .get('/admin/declarations')
+      .then((res) => setDeclarations(res.data))
       .catch(() => {});
   };
 
@@ -64,7 +83,9 @@ export function AdminDashboard() {
         {stats ? (
           <>
             <p>
-              <strong>{stats.totalTravailleurs}</strong> travailleur(s) inscrit(s) au total.
+              <strong>{stats.totalTravailleurs}</strong> travailleur(s) inscrit(s) &middot;{' '}
+              <strong>{stats.totalContratsSignes}</strong> contrat(s) signe(s) &middot;{' '}
+              <strong>{stats.totalDeclarations}</strong> declaration(s) CNPS/CMU.
             </p>
             {stats.parMetier.length > 0 && (
               <table>
@@ -128,6 +149,39 @@ export function AdminDashboard() {
               </div>
             );
           })
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Declarations CNPS / CMU</h2>
+        <p style={{ color: 'var(--muted)', marginTop: -6 }}>
+          Generees automatiquement a chaque signature de contrat de travail.
+        </p>
+        {declarations.length === 0 ? (
+          <p style={{ color: 'var(--muted)' }}>Aucune declaration pour le moment.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Travailleur</th>
+                <th>Agence</th>
+                <th>N&deg; CNPS</th>
+                <th>N&deg; CMU</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {declarations.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.contrat.travailleur.prenoms} {d.contrat.travailleur.nom}</td>
+                  <td>{d.contrat.agence.raisonSociale}</td>
+                  <td>{d.numeroCnps}</td>
+                  <td>{d.numeroCmu}</td>
+                  <td>{new Date(d.dateDeclaration).toLocaleDateString('fr-FR')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

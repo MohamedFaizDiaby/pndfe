@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 
 interface Document {
@@ -24,14 +25,31 @@ interface AgenceProfile {
   createdAt: string;
 }
 
+interface Contrat {
+  id: string;
+  poste: string;
+  typeContrat: string;
+  statut: string;
+  salaireBrut: number;
+  travailleur: { nom: string; prenoms: string };
+  createdAt: string;
+}
+
 const STATUT_LABEL: Record<string, { label: string; className: string }> = {
   EN_ATTENTE: { label: "Agrement en attente d'examen", className: 'orange' },
   APPROUVE: { label: 'Agrement approuve', className: 'green' },
   REJETE: { label: 'Agrement rejete', className: 'red' },
 };
 
+const CONTRAT_STATUT_LABEL: Record<string, { label: string; className: string }> = {
+  ENVOYE: { label: 'En attente de signature', className: 'orange' },
+  SIGNE: { label: 'Signe', className: 'green' },
+  REFUSE: { label: 'Refuse', className: 'red' },
+};
+
 export function AgenceDashboard() {
   const [profile, setProfile] = useState<AgenceProfile | null>(null);
+  const [contrats, setContrats] = useState<Contrat[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,12 +57,17 @@ export function AgenceDashboard() {
       .get('/agences/me')
       .then((res) => setProfile(res.data))
       .catch(() => setError('Impossible de charger le profil de votre agence'));
+    api
+      .get('/agences/contrats')
+      .then((res) => setContrats(res.data))
+      .catch(() => {});
   }, []);
 
   if (error) return <div className="error-box">{error}</div>;
   if (!profile) return <p>Chargement...</p>;
 
   const statut = STATUT_LABEL[profile.demandeAgrement?.statut || 'EN_ATTENTE'];
+  const estAgreee = profile.demandeAgrement?.statut === 'APPROUVE';
 
   return (
     <div>
@@ -84,11 +107,44 @@ export function AgenceDashboard() {
       </div>
 
       <div className="card">
-        <h2>Prochaines etapes</h2>
-        <p style={{ color: 'var(--muted)' }}>
-          Une fois votre agrement approuve par le Ministere, vous pourrez creer des contrats
-          de travail et gerer vos travailleurs depuis ce tableau de bord (Etape 2 du projet).
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <h2 style={{ margin: 0 }}>Contrats de travail</h2>
+          {estAgreee && (
+            <Link className="btn primary" to="/agence/contrats/nouveau">+ Nouveau contrat</Link>
+          )}
+        </div>
+
+        {!estAgreee && (
+          <p style={{ color: 'var(--muted)', marginTop: 10 }}>
+            Votre agence pourra creer des contrats de travail une fois son agrement approuve par le Ministere.
+          </p>
+        )}
+
+        {estAgreee && contrats.length === 0 && (
+          <p style={{ color: 'var(--muted)', marginTop: 10 }}>Aucun contrat cree pour le moment.</p>
+        )}
+
+        {contrats.map((c) => {
+          const cs = CONTRAT_STATUT_LABEL[c.statut] || CONTRAT_STATUT_LABEL.ENVOYE;
+          return (
+            <Link
+              key={c.id}
+              to={`/contrats/${c.id}`}
+              className="card"
+              style={{ display: 'block', marginTop: 10, marginBottom: 0, textDecoration: 'none', color: 'inherit' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <strong>{c.travailleur.prenoms} {c.travailleur.nom}</strong>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                    {c.poste} &middot; {c.typeContrat} &middot; {c.salaireBrut.toLocaleString('fr-FR')} FCFA/mois
+                  </div>
+                </div>
+                <span className={`badge ${cs.className}`}>{cs.label}</span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
