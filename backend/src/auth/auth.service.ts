@@ -11,12 +11,14 @@ import { RegisterAgenceDto } from './dto/register-agence.dto';
 import { LoginDto } from './dto/login.dto';
 import { Role } from '../common/enums';
 import { publicUrlFor } from '../common/file-storage';
+import { AuditService } from '../common/audit.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
+    private audit: AuditService,
   ) {}
 
   private async ensureEmailAvailable(email: string) {
@@ -33,6 +35,7 @@ export class AuthService {
   async registerTravailleur(
     dto: RegisterTravailleurDto,
     files: { photo?: Express.Multer.File[]; pieceIdentite?: Express.Multer.File[] },
+    ip?: string,
   ) {
     await this.ensureEmailAvailable(dto.email);
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -61,6 +64,15 @@ export class AuthService {
       include: { travailleur: true },
     });
 
+    await this.audit.log({
+      userId: user.id,
+      role: user.role,
+      action: 'INSCRIPTION_TRAVAILLEUR',
+      entite: 'Travailleur',
+      entiteId: user.travailleur?.id,
+      adresseIp: ip,
+    });
+
     return {
       accessToken: this.signToken(user),
       role: user.role,
@@ -71,6 +83,7 @@ export class AuthService {
   async registerAgence(
     dto: RegisterAgenceDto,
     documentFiles: Express.Multer.File[],
+    ip?: string,
   ) {
     await this.ensureEmailAvailable(dto.email);
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -103,6 +116,15 @@ export class AuthService {
       include: { agence: { include: { documents: true, demandeAgrement: true } } },
     });
 
+    await this.audit.log({
+      userId: user.id,
+      role: user.role,
+      action: 'INSCRIPTION_AGENCE',
+      entite: 'Agence',
+      entiteId: user.agence?.id,
+      adresseIp: ip,
+    });
+
     return {
       accessToken: this.signToken(user),
       role: user.role,
@@ -110,12 +132,34 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, ip?: string) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user) throw new UnauthorizedException('Identifiants invalides');
+    if (!user) {
+      await this.audit.log({
+        action: 'CONNEXION_ECHOUEE',
+        details: { email: dto.email },
+        adresseIp: ip,
+      });
+      throw new UnauthorizedException('Identifiants invalides');
+    }
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!valid) throw new UnauthorizedException('Identifiants invalides');
+    if (!valid) {
+      await this.audit.log({
+        userId: user.id,
+        role: user.role,
+        action: 'CONNEXION_ECHOUEE',
+        adresseIp: ip,
+      });
+      throw new UnauthorizedException('Identifiants invalides');
+    }
+
+    await this.audit.log({
+      userId: user.id,
+      role: user.role,
+      action: 'CONNEXION_REUSSIE',
+      adresseIp: ip,
+    });
 
     return {
       accessToken: this.signToken(user),

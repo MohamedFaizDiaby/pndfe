@@ -8,8 +8,9 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaiementDto } from './dto/create-paiement.dto';
-import { StatutContrat, StatutPaiement, TAUX_COTISATION_CNPS, MONTANT_COTISATION_CMU } from '../common/enums';
+import { StatutContrat, StatutPaiement, TAUX_COTISATION_CNPS, MONTANT_COTISATION_CMU, Role } from '../common/enums';
 import { generateBulletinPdf } from '../common/pdf';
+import { AuditService } from '../common/audit.service';
 
 const PAIEMENT_INCLUDE = {
   contrat: {
@@ -25,7 +26,10 @@ const PAIEMENT_INCLUDE = {
 
 @Injectable()
 export class PaiementsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+  ) {}
 
   private async getOwnedContrat(contratId: string, userId: string, role: string) {
     const ownership = await this.prisma.contrat.findUnique({
@@ -116,6 +120,15 @@ export class PaiementsService {
       datePaiement: paiement.datePaiement,
       numeroCnps: contrat.declaration.numeroCnps,
       numeroCmu: contrat.declaration.numeroCmu,
+    });
+
+    await this.audit.log({
+      userId: agenceUserId,
+      role: Role.AGENCE,
+      action: 'PAIEMENT_EFFECTUE',
+      entite: 'Paiement',
+      entiteId: paiement.id,
+      details: { contratId: contrat.id, periode: dto.periode, salaireNet, referenceTransaction },
     });
 
     return this.prisma.paiement.update({

@@ -36,4 +36,9 @@ export class AdminController {
   listDeclarations() {
     return this.adminService.listDeclarations();
   }
+
+  @Get('journal')
+  listJournal(@Query('action') action?: string, @Query('limit') limit?: string) {
+    return this.adminService.listJournal(action, limit ? parseInt(limit, 10) : undefined);
+  }
 }

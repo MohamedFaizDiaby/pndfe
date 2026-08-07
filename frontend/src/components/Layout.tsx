@@ -34,6 +34,7 @@ export function Layout({ children }: { children: ReactNode }) {
           {token && role === 'TRAVAILLEUR' && <Link to="/travailleur/portefeuille">Portefeuille social</Link>}
           {token && role === 'AGENCE' && <Link to="/agence/tableau-de-bord">Mon agence</Link>}
           {token && role === 'ADMIN' && <Link to="/admin/tableau-de-bord">Pilotage</Link>}
+          {token && role === 'ADMIN' && <Link to="/admin/journal">Journal d'audit</Link>}
           <Link to="/scanner">Scanner un QR Code</Link>
           {token && <button onClick={handleLogout}>Deconnexion</button>}
         </nav>

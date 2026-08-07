@@ -1,10 +1,11 @@
 # PNDFE — Plateforme Numerique de l'Emploi Formel
 
-MVP des **Etapes 1, 2 et 3** du cahier des charges PNDFE (Ministere de l'Emploi
+MVP des **Etapes 1 a 4** du cahier des charges PNDFE (Ministere de l'Emploi
 et de la Protection Sociale, Cote d'Ivoire) : **identite numerique**,
 **contrats de travail electroniques**, **paiement des salaires et bulletins
-de paie**, et une fonctionnalite de **mise en relation** entre travailleurs et
-offres d'emploi (au-dela du cahier des charges initial).
+de paie**, **securite et solidite** de la plateforme, et une fonctionnalite de
+**mise en relation** entre travailleurs et offres d'emploi (au-dela du cahier
+des charges initial).
 
 ## Ce qui est implemente
 
@@ -60,6 +61,25 @@ automatique de profils" evoque dans le cahier des charges (prevu en extension
 a 12 mois), mais implemente ici une mise en relation manuelle bidirectionnelle
 (offre publique + candidature) plutot qu'une recommandation automatique par IA.
 
+### Etape 4 — Securite et solidite
+
+- **Journal d'audit** : tracabilite de toutes les actions sensibles
+  (connexions, contrats, paiements, agrements, candidatures), consultable par
+  le Ministere.
+- **Limitation de debit** (rate limiting) globale et renforcee sur
+  `/auth/*`, verifiee par un test reel (voir rapport).
+- **Endpoint de sante** (`GET /health`) pour la supervision.
+- **Revue de securite du code** avec corrections appliquees (CORS, validation
+  des fichiers uploades) — voir le detail complet dans
+  [`RAPPORT_SECURITE.md`](./RAPPORT_SECURITE.md).
+- **Test de charge** reel (1000 requetes concurrentes) et verification du
+  rate limiting, resultats documentes dans le meme rapport.
+
+> Le cahier des charges prevoit un audit par des experts independants et une
+> surveillance 24h/24 : hors de portee de cet environnement de developpement.
+> Le rapport clarifie explicitement ce qui a ete reellement teste par rapport
+> a ce qui resterait a valider par un tiers avant mise en production.
+
 Les autres modules optionnels du cahier des charges (recommandation de profils,
 detection de fraude, biometrie, USSD, formation en ligne, cartographie) ne sont
 pas couverts par cette version (prevus en extension a 12 mois dans le document
@@ -111,7 +131,7 @@ cd backend
 npm install
 cp .env.example .env
 npx prisma migrate dev --name init   # cree la base SQLite + le compte admin
-npm run start:dev                     # http://localhost:4190
+npm run start:dev                     # http://localhost:4300
 ```
 
 Compte Ministere par defaut (cree par le seed) :
@@ -145,9 +165,15 @@ pndfe/
 
 ## Notes de securite (avant toute mise en production)
 
+Voir [`RAPPORT_SECURITE.md`](./RAPPORT_SECURITE.md) pour le detail complet
+(revue de code, corrections appliquees, resultats des tests de charge). En
+resume, avant toute mise en production :
+
 - Changer `JWT_SECRET` et le mot de passe admin par defaut.
 - Passer de SQLite a PostgreSQL.
 - Stocker les fichiers uploades (photos, pieces d'identite) sur un stockage
   objet chiffre (ex: S3) plutot que sur le disque local.
-- Ajouter la limitation de debit (rate limiting) sur `/auth/login` et
-  `/auth/register/*`.
+- Faire realiser un audit de securite independant (pentest) avant ouverture
+  au public.
+- Definir `FRONTEND_URL` avec l'URL publique reelle (le CORS est deja
+  restreint a cette origine).

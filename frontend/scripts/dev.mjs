@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild';
 
-const apiUrl = process.env.VITE_API_URL || 'http://localhost:4190';
+const apiUrl = process.env.VITE_API_URL || 'http://localhost:4300';
 
 const ctx = await esbuild.context({
   entryPoints: ['src/main.tsx'],

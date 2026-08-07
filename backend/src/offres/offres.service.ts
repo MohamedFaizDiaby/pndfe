@@ -10,7 +10,8 @@ import { CreateOffreDto } from './dto/create-offre.dto';
 import { UpdateOffreDto } from './dto/update-offre.dto';
 import { CreateCandidatureDto } from './dto/create-candidature.dto';
 import { AccepterCandidatureDto } from './dto/accepter-candidature.dto';
-import { StatutAgrement, StatutCandidature, StatutContrat, StatutOffre } from '../common/enums';
+import { StatutAgrement, StatutCandidature, StatutContrat, StatutOffre, Role } from '../common/enums';
+import { AuditService } from '../common/audit.service';
 
 const OFFRE_PUBLIC_INCLUDE = {
   agence: { select: { raisonSociale: true } },
@@ -26,7 +27,10 @@ const CANDIDATURE_INCLUDE = {
 
 @Injectable()
 export class OffresService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+  ) {}
 
   async createForAgence(agenceUserId: string, dto: CreateOffreDto) {
     const agence = await this.prisma.agence.findUnique({
@@ -40,7 +44,7 @@ export class OffresService {
       );
     }
 
-    return this.prisma.offreEmploi.create({
+    const offre = await this.prisma.offreEmploi.create({
       data: {
         agenceId: agence.id,
         titre: dto.titre,
@@ -52,6 +56,16 @@ export class OffresService {
         statut: StatutOffre.OUVERTE,
       },
     });
+
+    await this.audit.log({
+      userId: agenceUserId,
+      role: Role.AGENCE,
+      action: 'OFFRE_CREEE',
+      entite: 'OffreEmploi',
+      entiteId: offre.id,
+    });
+
+    return offre;
   }
 
   async listForAgence(agenceUserId: string) {
@@ -112,8 +126,9 @@ export class OffresService {
       throw new BadRequestException("Cette offre n'est plus ouverte aux candidatures");
     }
 
+    let candidature;
     try {
-      return await this.prisma.candidature.create({
+      candidature = await this.prisma.candidature.create({
         data: {
           offreId,
           travailleurId: travailleur.id,
@@ -128,6 +143,17 @@ export class OffresService {
       }
       throw err;
     }
+
+    await this.audit.log({
+      userId: travailleurUserId,
+      role: Role.TRAVAILLEUR,
+      action: 'CANDIDATURE_CREEE',
+      entite: 'Candidature',
+      entiteId: candidature.id,
+      details: { offreId },
+    });
+
+    return candidature;
   }
 
   async listMesCandidatures(travailleurUserId: string) {
@@ -191,6 +217,15 @@ export class OffresService {
       }),
     ]);
 
+    await this.audit.log({
+      userId: agenceUserId,
+      role: Role.AGENCE,
+      action: 'CANDIDATURE_ACCEPTEE',
+      entite: 'Candidature',
+      entiteId: candidatureId,
+      details: { offreId, contratId: contrat.id },
+    });
+
     return { candidature: updatedCandidature, contrat };
   }
 
@@ -204,10 +239,21 @@ export class OffresService {
       throw new BadRequestException('Cette candidature a deja ete traitee');
     }
 
-    return this.prisma.candidature.update({
+    const resultat = await this.prisma.candidature.update({
       where: { id: candidatureId },
       data: { statut: StatutCandidature.REJETEE },
       include: CANDIDATURE_INCLUDE,
     });
+
+    await this.audit.log({
+      userId: agenceUserId,
+      role: Role.AGENCE,
+      action: 'CANDIDATURE_REJETEE',
+      entite: 'Candidature',
+      entiteId: candidatureId,
+      details: { offreId },
+    });
+
+    return resultat;
   }
 }

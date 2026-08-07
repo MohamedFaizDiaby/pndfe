@@ -2,6 +2,7 @@
 // PNDFE - Etape 2 : Contrats de travail electroniques + declarations CNPS/CMU
 // PNDFE - Etape 3 : Paiement des salaires (Mobile Money simule) + bulletins de paie
 // PNDFE - Mise en relation : offres d'emploi publiees par les agences, candidatures des travailleurs
+// PNDFE - Etape 4 : journal d'audit (tracabilite des actions sensibles)
 // NB: SQLite est utilise en developpement local (aucun serveur a installer).
 // En production, changer "provider" en "postgresql" et DATABASE_URL vers l'instance
 // PostgreSQL du Ministere - le reste du schema reste identique.
@@ -204,4 +205,28 @@ model Candidature {
   updatedAt DateTime @updatedAt
 
   @@unique([offreId, travailleurId])
+}
+
+// Journal d'audit : volontairement sans relations (pas de onDelete: Cascade)
+// pour que la tracabilite survive independamment du cycle de vie des autres
+// entites. userId/role sont denormalises (copie de la valeur au moment de
+// l'action) plutot que lies par cle etrangere.
+model JournalAudit {
+  id String @id @default(uuid())
+
+  userId String? // null pour les actions non authentifiees (ex: tentative de connexion echouee)
+  role   String?
+  action String // ex: CONNEXION, CONNEXION_ECHOUEE, CONTRAT_CREE, CONTRAT_SIGNE, PAIEMENT_EFFECTUE...
+
+  entite   String? // ex: Contrat, Paiement, DemandeAgrement, Candidature
+  entiteId String?
+
+  details String? // JSON libre (contexte additionnel, non sensible)
+  adresseIp String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }

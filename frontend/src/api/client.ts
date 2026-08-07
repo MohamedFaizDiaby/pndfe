@@ -2,7 +2,7 @@ import axios from 'axios';
 
 declare const __API_URL__: string;
 
-export const API_URL = typeof __API_URL__ !== 'undefined' ? __API_URL__ : 'http://localhost:4190';
+export const API_URL = typeof __API_URL__ !== 'undefined' ? __API_URL__ : 'http://localhost:4300';
 
 export const api = axios.create({ baseURL: API_URL });
 

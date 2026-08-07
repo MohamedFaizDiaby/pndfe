@@ -9,8 +9,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateContratDto } from './dto/create-contrat.dto';
 import { SignerContratDto } from './dto/signer-contrat.dto';
 import { RefuserContratDto } from './dto/refuser-contrat.dto';
-import { StatutAgrement, StatutContrat } from '../common/enums';
+import { StatutAgrement, StatutContrat, Role } from '../common/enums';
 import { generateContratPdf } from '../common/pdf';
+import { AuditService } from '../common/audit.service';
 
 const CONTRAT_INCLUDE = {
   agence: { select: { id: true, raisonSociale: true, telephone: true, adresse: true, registreCommerce: true } },
@@ -26,7 +27,10 @@ function genererNumero(prefixe: string): string {
 
 @Injectable()
 export class ContratsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+  ) {}
 
   async createForAgence(agenceUserId: string, dto: CreateContratDto) {
     const agence = await this.prisma.agence.findUnique({
@@ -48,7 +52,7 @@ export class ContratsService {
       throw new NotFoundException("Travailleur introuvable pour ce code. Verifiez le QR Code scanne.");
     }
 
-    return this.prisma.contrat.create({
+    const contrat = await this.prisma.contrat.create({
       data: {
         agenceId: agence.id,
         travailleurId: travailleur.id,
@@ -62,6 +66,17 @@ export class ContratsService {
       },
       include: CONTRAT_INCLUDE,
     });
+
+    await this.audit.log({
+      userId: agenceUserId,
+      role: Role.AGENCE,
+      action: 'CONTRAT_CREE',
+      entite: 'Contrat',
+      entiteId: contrat.id,
+      details: { travailleurId: travailleur.id },
+    });
+
+    return contrat;
   }
 
   async listForAgence(agenceUserId: string) {
@@ -141,7 +156,7 @@ export class ContratsService {
       numeroCmu,
     });
 
-    return this.prisma.contrat.update({
+    const resultat = await this.prisma.contrat.update({
       where: { id },
       data: {
         statut: StatutContrat.SIGNE,
@@ -154,6 +169,17 @@ export class ContratsService {
       },
       include: CONTRAT_INCLUDE,
     });
+
+    await this.audit.log({
+      userId: travailleurUserId,
+      role: Role.TRAVAILLEUR,
+      action: 'CONTRAT_SIGNE',
+      entite: 'Contrat',
+      entiteId: id,
+      details: { numeroCnps, numeroCmu },
+    });
+
+    return resultat;
   }
 
   async refuse(id: string, travailleurUserId: string, dto: RefuserContratDto) {
@@ -162,10 +188,21 @@ export class ContratsService {
       throw new BadRequestException('Ce contrat a deja ete traite');
     }
 
-    return this.prisma.contrat.update({
+    const resultat = await this.prisma.contrat.update({
       where: { id },
       data: { statut: StatutContrat.REFUSE, motifRefus: dto.motif },
       include: CONTRAT_INCLUDE,
     });
+
+    await this.audit.log({
+      userId: travailleurUserId,
+      role: Role.TRAVAILLEUR,
+      action: 'CONTRAT_REFUSE',
+      entite: 'Contrat',
+      entiteId: id,
+      details: { motif: dto.motif },
+    });
+
+    return resultat;
   }
 }

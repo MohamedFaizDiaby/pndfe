@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { StatutAgrement } from '../common/enums';
+import { StatutAgrement, Role } from '../common/enums';
 import { TraiterAgrementDto } from './dto/traiter-agrement.dto';
+import { AuditService } from '../common/audit.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+  ) {}
 
   async listAgences(statut?: StatutAgrement) {
     const agences = await this.prisma.agence.findMany({
@@ -20,7 +24,7 @@ export class AdminService {
     const demande = await this.prisma.demandeAgrement.findUnique({ where: { agenceId } });
     if (!demande) throw new NotFoundException("Demande d'agrement introuvable");
 
-    return this.prisma.demandeAgrement.update({
+    const resultat = await this.prisma.demandeAgrement.update({
       where: { agenceId },
       data: {
         statut: dto.statut,
@@ -29,6 +33,17 @@ export class AdminService {
         dateTraitement: new Date(),
       },
     });
+
+    await this.audit.log({
+      userId: adminUserId,
+      role: Role.ADMIN,
+      action: 'AGREMENT_TRAITE',
+      entite: 'DemandeAgrement',
+      entiteId: resultat.id,
+      details: { agenceId, statut: dto.statut },
+    });
+
+    return resultat;
   }
 
   async statsTravailleurs() {
@@ -69,5 +84,25 @@ export class AdminService {
       orderBy: { dateDeclaration: 'desc' },
     });
     return declarations;
+  }
+
+  async listJournal(action?: string, limit = 100) {
+    const entries = await this.prisma.journalAudit.findMany({
+      where: action ? { action } : undefined,
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(limit, 500),
+    });
+
+    const userIds = [...new Set(entries.map((e) => e.userId).filter((id): id is string => !!id))];
+    const users = userIds.length
+      ? await this.prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true } })
+      : [];
+    const emailParId = new Map(users.map((u) => [u.id, u.email]));
+
+    return entries.map((e) => ({
+      ...e,
+      details: e.details ? JSON.parse(e.details) : null,
+      userEmail: e.userId ? emailParId.get(e.userId) ?? null : null,
+    }));
   }
 }

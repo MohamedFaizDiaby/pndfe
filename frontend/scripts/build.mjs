@@ -1,7 +1,7 @@
 import * as esbuild from 'esbuild';
 import { cpSync } from 'fs';
 
-const apiUrl = process.env.VITE_API_URL || 'http://localhost:4190';
+const apiUrl = process.env.VITE_API_URL || 'http://localhost:4300';
 
 await esbuild.build({
   entryPoints: ['src/main.tsx'],

@@ -18,6 +18,7 @@ import { OffreDetail } from './pages/OffreDetail';
 import { NouvelleOffre } from './pages/NouvelleOffre';
 import { CandidaturesOffre } from './pages/CandidaturesOffre';
 import { MesCandidatures } from './pages/MesCandidatures';
+import { JournalAudit } from './pages/JournalAudit';
 
 export default function App() {
   return (
@@ -129,6 +130,14 @@ export default function App() {
           element={
             <ProtectedRoute role="ADMIN">
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/journal"
+          element={
+            <ProtectedRoute role="ADMIN">
+              <JournalAudit />
             </ProtectedRoute>
           }
         />
