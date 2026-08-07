@@ -12,6 +12,7 @@ import { QrScanner } from './pages/QrScanner';
 import { VerifierQr } from './pages/VerifierQr';
 import { NouveauContrat } from './pages/NouveauContrat';
 import { ContratDetail } from './pages/ContratDetail';
+import { Portefeuille } from './pages/Portefeuille';
 
 export default function App() {
   return (
@@ -36,6 +37,14 @@ export default function App() {
           element={
             <ProtectedRoute role="TRAVAILLEUR">
               <TravailleurDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/travailleur/portefeuille"
+          element={
+            <ProtectedRoute role="TRAVAILLEUR">
+              <Portefeuille />
             </ProtectedRoute>
           }
         />

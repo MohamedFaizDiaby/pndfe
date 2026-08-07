@@ -122,3 +122,116 @@ export function generateContratPdf(data: ContratPdfData): Promise<string> {
     stream.on('error', reject);
   });
 }
+
+export interface BulletinPdfData {
+  paiementId: string;
+  periode: string;
+  poste: string;
+  agence: { raisonSociale: string; registreCommerce: string };
+  travailleur: { nom: string; prenoms: string; numeroPieceIdentite: string };
+  salaireBrut: number;
+  cotisationCnps: number;
+  cotisationCmu: number;
+  salaireNet: number;
+  methodePaiement: string;
+  telephoneBeneficiaire: string;
+  referenceTransaction: string;
+  datePaiement: Date;
+  numeroCnps: string;
+  numeroCmu: string;
+}
+
+const methodeLabel = (m: string) => (m === 'ORANGE_MONEY' ? 'Orange Money' : 'MTN Mobile Money');
+
+/**
+ * Genere le bulletin de paie PDF et le sauvegarde sous uploads/bulletins/<id>.pdf.
+ */
+export function generateBulletinPdf(data: BulletinPdfData): Promise<string> {
+  const dir = 'uploads/bulletins';
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+  const filename = `${data.paiementId}.pdf`;
+  const filepath = join(dir, filename);
+
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50 });
+    const stream = createWriteStream(filepath);
+    doc.pipe(stream);
+
+    doc
+      .fontSize(9)
+      .fillColor('#6b7280')
+      .text("REPUBLIQUE DE COTE D'IVOIRE - MINISTERE DE L'EMPLOI ET DE LA PROTECTION SOCIALE", { align: 'center' })
+      .text("PNDFE - Plateforme Numerique de l'Emploi Formel", { align: 'center' })
+      .moveDown(1);
+
+    doc
+      .fillColor('#0f2a4a')
+      .fontSize(18)
+      .text('BULLETIN DE PAIE', { align: 'center' })
+      .moveDown(0.2)
+      .fontSize(11)
+      .fillColor('#6b7280')
+      .text(`Periode : ${data.periode}`, { align: 'center' })
+      .moveDown(1.5);
+
+    doc.fillColor('#000000').fontSize(11);
+
+    doc.font('Helvetica-Bold').text('EMPLOYEUR');
+    doc.font('Helvetica').moveDown(0.3);
+    doc.text(data.agence.raisonSociale);
+    doc.text(`RCCM : ${data.agence.registreCommerce}`);
+    doc.moveDown(0.8);
+
+    doc.font('Helvetica-Bold').text('SALARIE');
+    doc.font('Helvetica').moveDown(0.3);
+    doc.text(`${data.travailleur.prenoms} ${data.travailleur.nom}`);
+    doc.text(`Piece d'identite : ${data.travailleur.numeroPieceIdentite}`);
+    doc.text(`Poste : ${data.poste}`);
+    doc.text(`N° affiliation CNPS : ${data.numeroCnps}`);
+    doc.text(`N° couverture CMU : ${data.numeroCmu}`);
+    doc.moveDown(1);
+
+    doc.font('Helvetica-Bold').text('DETAIL DE LA REMUNERATION');
+    doc.font('Helvetica').moveDown(0.4);
+
+    const rows: [string, string][] = [
+      ['Salaire brut', money(data.salaireBrut)],
+      ['Cotisation CNPS (retraite, part salariale)', `- ${money(data.cotisationCnps)}`],
+      ['Cotisation CMU', `- ${money(data.cotisationCmu)}`],
+    ];
+    for (const [label, value] of rows) {
+      doc.text(label, { continued: true });
+      doc.text(value, { align: 'right' });
+    }
+    doc.moveDown(0.3);
+    doc.font('Helvetica-Bold');
+    doc.text('NET A PAYER', { continued: true });
+    doc.text(money(data.salaireNet), { align: 'right' });
+    doc.font('Helvetica').moveDown(1);
+
+    doc.font('Helvetica-Bold').text('PAIEMENT');
+    doc.font('Helvetica').moveDown(0.3);
+    doc.text(`Methode : ${methodeLabel(data.methodePaiement)}`);
+    doc.text(`Numero beneficiaire : ${data.telephoneBeneficiaire}`);
+    doc.text(`Reference de transaction : ${data.referenceTransaction}`);
+    doc.text(`Date de versement : ${data.datePaiement.toLocaleString('fr-FR')}`);
+    doc.moveDown(1.5);
+
+    doc
+      .fontSize(9)
+      .fillColor('#6b7280')
+      .text(
+        'Document genere automatiquement par la plateforme PNDFE. Paiement Mobile Money simule ' +
+          "dans cette version de demonstration (aucun transfert d'argent reel n'a ete effectue). " +
+          "En production, le versement s'effectue via l'API du prestataire Mobile Money agree " +
+          "(Orange Money / MTN MoMo).",
+        { align: 'justify' },
+      );
+
+    doc.end();
+
+    stream.on('finish', () => resolve(`/uploads/bulletins/${filename}`));
+    stream.on('error', reject);
+  });
+}

@@ -17,9 +17,24 @@ interface Contrat {
   motifRefus: string | null;
   pdfUrl: string | null;
   agence: { raisonSociale: string; telephone: string; adresse: string; registreCommerce: string };
-  travailleur: { nom: string; prenoms: string; metier: string; photoUrl: string | null };
+  travailleur: { nom: string; prenoms: string; metier: string; photoUrl: string | null; telephone: string };
   declaration: { numeroCnps: string; numeroCmu: string; dateDeclaration: string } | null;
   createdAt: string;
+}
+
+interface Paiement {
+  id: string;
+  periode: string;
+  salaireBrut: number;
+  cotisationCnps: number;
+  cotisationCmu: number;
+  salaireNet: number;
+  methodePaiement: string;
+  telephoneBeneficiaire: string;
+  statut: string;
+  referenceTransaction: string;
+  bulletinPdfUrl: string | null;
+  datePaiement: string;
 }
 
 const STATUT_LABEL: Record<string, { label: string; className: string }> = {
@@ -27,6 +42,13 @@ const STATUT_LABEL: Record<string, { label: string; className: string }> = {
   SIGNE: { label: 'Signe', className: 'green' },
   REFUSE: { label: 'Refuse', className: 'red' },
 };
+
+const METHODE_LABEL: Record<string, string> = {
+  ORANGE_MONEY: 'Orange Money',
+  MTN_MOMO: 'MTN Mobile Money',
+};
+
+const moisCourant = () => new Date().toISOString().slice(0, 7);
 
 export function ContratDetail() {
   const { id } = useParams<{ id: string }>();
@@ -39,12 +61,30 @@ export function ContratDetail() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [paiements, setPaiements] = useState<Paiement[]>([]);
+  const [showPaiementForm, setShowPaiementForm] = useState(false);
+  const [paiementForm, setPaiementForm] = useState({ periode: moisCourant(), methodePaiement: 'ORANGE_MONEY', telephoneBeneficiaire: '' });
+  const [paiementError, setPaiementError] = useState<string | null>(null);
+  const [paiementBusy, setPaiementBusy] = useState(false);
+
+  const loadPaiements = () => {
+    if (!id) return;
+    api
+      .get(`/contrats/${id}/paiements`)
+      .then((res) => setPaiements(res.data))
+      .catch(() => {});
+  };
+
   const load = () => {
     if (!id) return;
     api
       .get(`/contrats/${id}`)
-      .then((res) => setContrat(res.data))
+      .then((res) => {
+        setContrat(res.data);
+        setPaiementForm((f) => ({ ...f, telephoneBeneficiaire: f.telephoneBeneficiaire || res.data.travailleur.telephone }));
+      })
       .catch(() => setError('Impossible de charger ce contrat'));
+    loadPaiements();
   };
 
   useEffect(load, [id]);
@@ -60,6 +100,21 @@ export function ContratDetail() {
       setActionError(err?.response?.data?.message || 'Erreur lors de la signature');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const declencherPaiement = async (e: FormEvent) => {
+    e.preventDefault();
+    setPaiementError(null);
+    setPaiementBusy(true);
+    try {
+      await api.post(`/contrats/${id}/paiements`, paiementForm);
+      setShowPaiementForm(false);
+      loadPaiements();
+    } catch (err: any) {
+      setPaiementError(err?.response?.data?.message || 'Erreur lors du versement du salaire');
+    } finally {
+      setPaiementBusy(false);
     }
   };
 
@@ -152,6 +207,91 @@ export function ContratDetail() {
             <a className="btn secondary" href={fileUrl(contrat.pdfUrl)} target="_blank" rel="noreferrer" style={{ marginTop: 14, display: 'inline-block' }}>
               Telecharger le contrat signe (PDF)
             </a>
+          )}
+        </div>
+      )}
+
+      {contrat.statut === 'SIGNE' && (
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <h2 style={{ margin: 0 }}>Paiements du salaire</h2>
+            {role === 'AGENCE' && (
+              <button className="btn primary" type="button" onClick={() => setShowPaiementForm((v) => !v)}>
+                {showPaiementForm ? 'Annuler' : 'Verser le salaire'}
+              </button>
+            )}
+          </div>
+          <p style={{ color: 'var(--muted)', fontSize: '0.82rem', marginTop: 6 }}>
+            Paiement Mobile Money simule dans cette demonstration — aucun transfert d'argent reel n'est effectue.
+          </p>
+
+          {showPaiementForm && role === 'AGENCE' && (
+            <form onSubmit={declencherPaiement} style={{ marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+              {paiementError && <div className="error-box" style={{ marginBottom: 12 }}>{paiementError}</div>}
+              <div className="field">
+                <label>Periode (mois)</label>
+                <input
+                  type="month"
+                  required
+                  value={paiementForm.periode}
+                  onChange={(e) => setPaiementForm((f) => ({ ...f, periode: e.target.value }))}
+                />
+              </div>
+              <div className="field">
+                <label>Methode de paiement</label>
+                <select
+                  value={paiementForm.methodePaiement}
+                  onChange={(e) => setPaiementForm((f) => ({ ...f, methodePaiement: e.target.value }))}
+                >
+                  <option value="ORANGE_MONEY">Orange Money</option>
+                  <option value="MTN_MOMO">MTN Mobile Money</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>Numero beneficiaire</label>
+                <input
+                  required
+                  value={paiementForm.telephoneBeneficiaire}
+                  onChange={(e) => setPaiementForm((f) => ({ ...f, telephoneBeneficiaire: e.target.value }))}
+                />
+              </div>
+              <button className="btn secondary" disabled={paiementBusy} type="submit">
+                {paiementBusy ? 'Versement en cours...' : 'Confirmer le versement'}
+              </button>
+            </form>
+          )}
+
+          {paiements.length === 0 ? (
+            <p style={{ color: 'var(--muted)', marginTop: 14 }}>Aucun paiement effectue pour le moment.</p>
+          ) : (
+            <div style={{ marginTop: 14 }}>
+              {paiements.map((p) => (
+                <div key={p.id} className="card" style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <strong>{p.periode}</strong>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                        {METHODE_LABEL[p.methodePaiement]} &middot; {p.telephoneBeneficiaire} &middot; Ref. {p.referenceTransaction}
+                      </div>
+                    </div>
+                    <span className={`badge ${p.statut === 'REUSSI' ? 'green' : 'red'}`}>{p.statut}</span>
+                  </div>
+                  <table style={{ marginTop: 10 }}>
+                    <tbody>
+                      <tr><th>Brut</th><td>{p.salaireBrut.toLocaleString('fr-FR')} FCFA</td></tr>
+                      <tr><th>Cotisation CNPS</th><td>- {p.cotisationCnps.toLocaleString('fr-FR')} FCFA</td></tr>
+                      <tr><th>Cotisation CMU</th><td>- {p.cotisationCmu.toLocaleString('fr-FR')} FCFA</td></tr>
+                      <tr><th>Net verse</th><td><strong>{p.salaireNet.toLocaleString('fr-FR')} FCFA</strong></td></tr>
+                    </tbody>
+                  </table>
+                  {p.bulletinPdfUrl && (
+                    <a className="btn ghost" href={fileUrl(p.bulletinPdfUrl)} target="_blank" rel="noreferrer" style={{ marginTop: 10, display: 'inline-block' }}>
+                      Telecharger le bulletin de paie (PDF)
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

@@ -40,11 +40,19 @@ export class AdminService {
     const totalContratsSignes = await this.prisma.contrat.count({ where: { statut: 'SIGNE' } });
     const totalDeclarations = await this.prisma.declarationCnps.count();
 
+    const paiements = await this.prisma.paiement.findMany({
+      where: { statut: 'REUSSI' },
+      select: { cotisationCnps: true, cotisationCmu: true },
+    });
+    const totalCotisationsCollectees = paiements.reduce((sum, p) => sum + p.cotisationCnps + p.cotisationCmu, 0);
+
     return {
       totalTravailleurs: total,
       parMetier: parMetier.map((m) => ({ metier: m.metier, count: m._count._all })),
       totalContratsSignes,
       totalDeclarations,
+      totalPaiements: paiements.length,
+      totalCotisationsCollectees,
     };
   }
 

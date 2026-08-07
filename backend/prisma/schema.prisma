@@ -1,5 +1,6 @@
 // PNDFE - Etape 1 : Identite numerique des travailleurs et des agences
 // PNDFE - Etape 2 : Contrats de travail electroniques + declarations CNPS/CMU
+// PNDFE - Etape 3 : Paiement des salaires (Mobile Money simule) + bulletins de paie
 // NB: SQLite est utilise en developpement local (aucun serveur a installer).
 // En production, changer "provider" en "postgresql" et DATABASE_URL vers l'instance
 // PostgreSQL du Ministere - le reste du schema reste identique.
@@ -19,6 +20,8 @@ datasource db {
 // StatutAgrement: EN_ATTENTE | APPROUVE | REJETE
 // StatutVerificationIdentite: EN_ATTENTE | VERIFIE | REJETE
 // StatutContrat: ENVOYE | SIGNE | REFUSE
+// MethodePaiement: ORANGE_MONEY | MTN_MOMO
+// StatutPaiement: REUSSI | ECHEC
 
 model User {
   id           String   @id @default(uuid())
@@ -119,9 +122,34 @@ model Contrat {
   pdfUrl                  String?
 
   declaration DeclarationCnps?
+  paiements   Paiement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Paiement {
+  id String @id @default(uuid())
+
+  contratId String
+  contrat   Contrat @relation(fields: [contratId], references: [id], onDelete: Cascade)
+
+  periode String // "AAAA-MM", ex: "2026-08"
+
+  salaireBrut    Float
+  cotisationCnps Float
+  cotisationCmu  Float
+  salaireNet     Float
+
+  methodePaiement       String // ORANGE_MONEY | MTN_MOMO
+  telephoneBeneficiaire String
+  statut                String @default("REUSSI")
+  referenceTransaction  String @unique
+
+  bulletinPdfUrl String?
+  datePaiement   DateTime @default(now())
+
+  @@unique([contratId, periode])
 }
 
 model DeclarationCnps {

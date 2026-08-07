@@ -1,9 +1,9 @@
 # PNDFE — Plateforme Numerique de l'Emploi Formel
 
-MVP des **Etapes 1 et 2** du cahier des charges PNDFE (Ministere de l'Emploi et
-de la Protection Sociale, Cote d'Ivoire) : **identite numerique** des
-travailleurs et des agences, puis **contrats de travail electroniques** et
-**declaration CNPS/CMU automatique**.
+MVP des **Etapes 1, 2 et 3** du cahier des charges PNDFE (Ministere de l'Emploi
+et de la Protection Sociale, Cote d'Ivoire) : **identite numerique**,
+**contrats de travail electroniques**, puis **paiement des salaires et
+bulletins de paie**.
 
 ## Ce qui est implemente
 
@@ -30,14 +30,34 @@ travailleurs et des agences, puis **contrats de travail electroniques** et
 - Suivi des contrats (en attente / signe / refuse) cote agence et travailleur.
 - Tableau de bord Ministere enrichi : contrats signes, declarations CNPS/CMU.
 
-Les etapes suivantes du cahier des charges (paiement Mobile Money, bulletins de
-paie) ne sont pas couvertes par cette version.
+### Etape 3 — Paiement des salaires et portefeuille social
 
-> **Limite assumee** : la signature electronique de l'Etape 2 est une signature
-> simple (nom saisi + consentement horodate), suffisante pour une demonstration
-> fonctionnelle. Une mise en production s'appuierait sur un prestataire de
-> signature electronique agree (ex. DocuSign, Yousign) pour la valeur probatoire
-> renforcee mentionnee dans le cahier des charges.
+- Versement du salaire par une agence, sur un contrat signe, pour une periode
+  donnee (mois), via **Orange Money ou MTN MoMo** (voir limite assumee ci-dessous).
+- Calcul automatique : salaire brut, cotisation CNPS (retraite, 6.3%),
+  cotisation CMU (forfait), net verse.
+- **Bulletin de paie PDF conforme**, genere a chaque paiement et telechargeable.
+- **Portefeuille social du travailleur** : droits CNPS/CMU cumules, total net
+  percu, historique des missions (contrats).
+- Tableau de bord Ministere enrichi : nombre de paiements, total des
+  cotisations CNPS/CMU collectees.
+
+Les modules optionnels du cahier des charges (recommandation de profils,
+detection de fraude, biometrie, USSD, formation en ligne, cartographie) ne sont
+pas couverts par cette version (prevus en extension a 12 mois dans le document
+original).
+
+> **Limites assumees** :
+> - La **signature electronique** (Etape 2) est une signature simple (nom saisi
+>   + consentement horodate), suffisante pour une demonstration fonctionnelle.
+>   Une mise en production s'appuierait sur un prestataire de signature
+>   electronique agree (ex. DocuSign, Yousign) pour la valeur probatoire
+>   renforcee mentionnee dans le cahier des charges.
+> - Le **paiement Mobile Money** (Etape 3) est **simule** : la plateforme
+>   calcule les montants, genere une reference de transaction et le bulletin de
+>   paie, mais n'effectue aucun transfert d'argent reel. Une mise en production
+>   s'integrerait aux API officielles d'Orange Money et MTN MoMo (avec gestion
+>   asynchrone des callbacks de confirmation).
 
 ## Stack technique
 

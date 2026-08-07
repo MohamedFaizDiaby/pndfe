@@ -17,6 +17,13 @@ export class TravailleursController {
     return this.travailleursService.getByUserId(user.userId);
   }
 
+  @Get('portefeuille')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.TRAVAILLEUR)
+  getPortefeuille(@CurrentUser() user: CurrentUserPayload) {
+    return this.travailleursService.getPortefeuille(user.userId);
+  }
+
   // Endpoint public : appele lors du scan d'un QR Code par une agence ou un employeur.
   @Get('verifier/:token')
   verify(@Param('token') token: string) {

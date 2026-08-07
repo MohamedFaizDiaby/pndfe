@@ -17,6 +17,8 @@ interface Stats {
   parMetier: { metier: string; count: number }[];
   totalContratsSignes: number;
   totalDeclarations: number;
+  totalPaiements: number;
+  totalCotisationsCollectees: number;
 }
 
 interface Declaration {
@@ -86,6 +88,10 @@ export function AdminDashboard() {
               <strong>{stats.totalTravailleurs}</strong> travailleur(s) inscrit(s) &middot;{' '}
               <strong>{stats.totalContratsSignes}</strong> contrat(s) signe(s) &middot;{' '}
               <strong>{stats.totalDeclarations}</strong> declaration(s) CNPS/CMU.
+            </p>
+            <p>
+              <strong>{stats.totalPaiements}</strong> paiement(s) de salaire effectue(s) &middot;{' '}
+              <strong>{stats.totalCotisationsCollectees.toLocaleString('fr-FR')} FCFA</strong> de cotisations CNPS/CMU collectees.
             </p>
             {stats.parMetier.length > 0 && (
               <table>
