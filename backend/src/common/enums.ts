@@ -34,6 +34,17 @@ export enum StatutPaiement {
   ECHEC = 'ECHEC',
 }
 
+export enum StatutOffre {
+  OUVERTE = 'OUVERTE',
+  FERMEE = 'FERMEE',
+}
+
+export enum StatutCandidature {
+  EN_ATTENTE = 'EN_ATTENTE',
+  ACCEPTEE = 'ACCEPTEE',
+  REJETEE = 'REJETEE',
+}
+
 // Taux appliques en simulation, indicatifs (a aligner sur le bareme officiel CNPS/CMU en production).
 export const TAUX_COTISATION_CNPS = 0.063; // 6.3% du salaire brut (part salariale retraite)
 export const MONTANT_COTISATION_CMU = 1000; // forfait mensuel CMU en FCFA

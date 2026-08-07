@@ -1,6 +1,7 @@
 // PNDFE - Etape 1 : Identite numerique des travailleurs et des agences
 // PNDFE - Etape 2 : Contrats de travail electroniques + declarations CNPS/CMU
 // PNDFE - Etape 3 : Paiement des salaires (Mobile Money simule) + bulletins de paie
+// PNDFE - Mise en relation : offres d'emploi publiees par les agences, candidatures des travailleurs
 // NB: SQLite est utilise en developpement local (aucun serveur a installer).
 // En production, changer "provider" en "postgresql" et DATABASE_URL vers l'instance
 // PostgreSQL du Ministere - le reste du schema reste identique.
@@ -22,6 +23,8 @@ datasource db {
 // StatutContrat: ENVOYE | SIGNE | REFUSE
 // MethodePaiement: ORANGE_MONEY | MTN_MOMO
 // StatutPaiement: REUSSI | ECHEC
+// StatutOffre: OUVERTE | FERMEE
+// StatutCandidature: EN_ATTENTE | ACCEPTEE | REJETEE
 
 model User {
   id           String   @id @default(uuid())
@@ -51,7 +54,8 @@ model Travailleur {
   qrCodeToken          String @unique @default(uuid())
   statutVerification   String @default("EN_ATTENTE")
 
-  contrats Contrat[]
+  contrats     Contrat[]
+  candidatures Candidature[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,6 +76,7 @@ model Agence {
   documents       Document[]
   demandeAgrement DemandeAgrement?
   contrats        Contrat[]
+  offres          OffreEmploi[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -161,4 +166,42 @@ model DeclarationCnps {
   numeroCnps      String   @unique
   numeroCmu       String   @unique
   dateDeclaration DateTime @default(now())
+}
+
+model OffreEmploi {
+  id String @id @default(uuid())
+
+  agenceId String
+  agence   Agence @relation(fields: [agenceId], references: [id], onDelete: Cascade)
+
+  titre       String
+  typeContrat String // BTP, GARDIENNAGE, DOMESTIQUE, RESTAURATION, AGRICULTURE, MANUTENTION, AUTRE
+  description String
+  lieuTravail String
+  salaireBrut Float
+  nombrePostes Int    @default(1)
+
+  statut String @default("OUVERTE")
+
+  candidatures Candidature[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Candidature {
+  id String @id @default(uuid())
+
+  offreId       String
+  offre         OffreEmploi @relation(fields: [offreId], references: [id], onDelete: Cascade)
+  travailleurId String
+  travailleur   Travailleur @relation(fields: [travailleurId], references: [id], onDelete: Cascade)
+
+  statut  String  @default("EN_ATTENTE")
+  message String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([offreId, travailleurId])
 }

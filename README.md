@@ -2,8 +2,9 @@
 
 MVP des **Etapes 1, 2 et 3** du cahier des charges PNDFE (Ministere de l'Emploi
 et de la Protection Sociale, Cote d'Ivoire) : **identite numerique**,
-**contrats de travail electroniques**, puis **paiement des salaires et
-bulletins de paie**.
+**contrats de travail electroniques**, **paiement des salaires et bulletins
+de paie**, et une fonctionnalite de **mise en relation** entre travailleurs et
+offres d'emploi (au-dela du cahier des charges initial).
 
 ## Ce qui est implemente
 
@@ -42,7 +43,24 @@ bulletins de paie**.
 - Tableau de bord Ministere enrichi : nombre de paiements, total des
   cotisations CNPS/CMU collectees.
 
-Les modules optionnels du cahier des charges (recommandation de profils,
+### Mise en relation — Offres d'emploi (hors cahier des charges initial)
+
+- Une agence agreee **publie une offre** (titre, secteur, description, lieu,
+  salaire, nombre de postes).
+- Les offres ouvertes sont **consultables publiquement**, filtrables par secteur.
+- Un travailleur **postule** (avec un message optionnel) depuis son compte.
+- L'agence consulte les candidatures recues et peut **accepter** (ce qui cree
+  automatiquement un contrat pre-rempli avec les termes de l'offre, envoye
+  pour signature) ou **rejeter** une candidature.
+- Le travailleur suit le statut de ses candidatures (en attente / acceptee /
+  rejetee) et retrouve le contrat genere en cas d'acceptation.
+
+Cette fonctionnalite se rapproche du module optionnel "Recommandation
+automatique de profils" evoque dans le cahier des charges (prevu en extension
+a 12 mois), mais implemente ici une mise en relation manuelle bidirectionnelle
+(offre publique + candidature) plutot qu'une recommandation automatique par IA.
+
+Les autres modules optionnels du cahier des charges (recommandation de profils,
 detection de fraude, biometrie, USSD, formation en ligne, cartographie) ne sont
 pas couverts par cette version (prevus en extension a 12 mois dans le document
 original).
@@ -114,7 +132,7 @@ npm run dev    # http://localhost:5190
 
 ```
 pndfe/
-  backend/     API NestJS (auth, travailleurs, agences, contrats, admin)
+  backend/     API NestJS (auth, travailleurs, agences, contrats, paiements, offres, admin)
     prisma/    schema.prisma, migrations, seed
     src/
   frontend/    Application web React (mobile-first)

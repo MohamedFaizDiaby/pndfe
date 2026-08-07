@@ -21,6 +21,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </Link>
         <nav>
+          <Link to="/offres">Offres d'emploi</Link>
           {!token && (
             <>
               <Link to="/travailleur/connexion">Espace travailleur</Link>
@@ -29,6 +30,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </>
           )}
           {token && role === 'TRAVAILLEUR' && <Link to="/travailleur/tableau-de-bord">Mon profil</Link>}
+          {token && role === 'TRAVAILLEUR' && <Link to="/travailleur/candidatures">Mes candidatures</Link>}
           {token && role === 'TRAVAILLEUR' && <Link to="/travailleur/portefeuille">Portefeuille social</Link>}
           {token && role === 'AGENCE' && <Link to="/agence/tableau-de-bord">Mon agence</Link>}
           {token && role === 'ADMIN' && <Link to="/admin/tableau-de-bord">Pilotage</Link>}

@@ -13,6 +13,11 @@ import { VerifierQr } from './pages/VerifierQr';
 import { NouveauContrat } from './pages/NouveauContrat';
 import { ContratDetail } from './pages/ContratDetail';
 import { Portefeuille } from './pages/Portefeuille';
+import { ListeOffres } from './pages/ListeOffres';
+import { OffreDetail } from './pages/OffreDetail';
+import { NouvelleOffre } from './pages/NouvelleOffre';
+import { CandidaturesOffre } from './pages/CandidaturesOffre';
+import { MesCandidatures } from './pages/MesCandidatures';
 
 export default function App() {
   return (
@@ -45,6 +50,14 @@ export default function App() {
           element={
             <ProtectedRoute role="TRAVAILLEUR">
               <Portefeuille />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/travailleur/candidatures"
+          element={
+            <ProtectedRoute role="TRAVAILLEUR">
+              <MesCandidatures />
             </ProtectedRoute>
           }
         />
@@ -85,6 +98,25 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/agence/offres/nouvelle"
+          element={
+            <ProtectedRoute role="AGENCE">
+              <NouvelleOffre />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/agence/offres/:id/candidatures"
+          element={
+            <ProtectedRoute role="AGENCE">
+              <CandidaturesOffre />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/offres" element={<ListeOffres />} />
+        <Route path="/offres/:id" element={<OffreDetail />} />
 
         <Route
           path="/admin/connexion"

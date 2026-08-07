@@ -17,6 +17,9 @@ export function Home() {
           <Link className="actor-card" to="/agence/inscription">
             🏢 Je suis une agence d'emploi
           </Link>
+          <Link className="actor-card" to="/offres">
+            🔎 Voir les offres d'emploi
+          </Link>
           <Link className="actor-card" to="/admin/connexion">
             🏛️ Espace Ministere / CNPS
           </Link>
@@ -27,12 +30,12 @@ export function Home() {
       </div>
 
       <div className="card">
-        <h2>Etape 1 du projet : l'identite numerique</h2>
+        <h2>Ce que couvre cette version</h2>
         <p>
-          Cette version couvre le premier jalon du PNDFE (semaines 1 a 6) : l'inscription des
-          travailleurs et des agences, la verification d'identite et la carte professionnelle
-          a QR Code scannable. Les contrats, la paie Mobile Money et le tableau de bord national
-          complet arrivent dans les etapes suivantes du calendrier de mise en service.
+          Identite numerique et carte professionnelle QR, agrement des agences, contrats de
+          travail electroniques avec declaration CNPS/CMU automatique, paiement des salaires
+          (Mobile Money simule) avec bulletin de paie PDF, portefeuille social du travailleur,
+          et mise en relation : les agences publient des offres, les travailleurs postulent.
         </p>
       </div>
     </div>

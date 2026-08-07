@@ -35,6 +35,15 @@ interface Contrat {
   createdAt: string;
 }
 
+interface Offre {
+  id: string;
+  titre: string;
+  typeContrat: string;
+  statut: string;
+  salaireBrut: number;
+  _count: { candidatures: number };
+}
+
 const STATUT_LABEL: Record<string, { label: string; className: string }> = {
   EN_ATTENTE: { label: "Agrement en attente d'examen", className: 'orange' },
   APPROUVE: { label: 'Agrement approuve', className: 'green' },
@@ -50,6 +59,7 @@ const CONTRAT_STATUT_LABEL: Record<string, { label: string; className: string }>
 export function AgenceDashboard() {
   const [profile, setProfile] = useState<AgenceProfile | null>(null);
   const [contrats, setContrats] = useState<Contrat[]>([]);
+  const [offres, setOffres] = useState<Offre[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,6 +70,10 @@ export function AgenceDashboard() {
     api
       .get('/agences/contrats')
       .then((res) => setContrats(res.data))
+      .catch(() => {});
+    api
+      .get('/agences/offres')
+      .then((res) => setOffres(res.data))
       .catch(() => {});
   }, []);
 
@@ -145,6 +159,44 @@ export function AgenceDashboard() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <h2 style={{ margin: 0 }}>Offres d'emploi</h2>
+          {estAgreee && (
+            <Link className="btn primary" to="/agence/offres/nouvelle">+ Nouvelle offre</Link>
+          )}
+        </div>
+
+        {!estAgreee && (
+          <p style={{ color: 'var(--muted)', marginTop: 10 }}>
+            Votre agence pourra publier des offres d'emploi une fois son agrement approuve par le Ministere.
+          </p>
+        )}
+
+        {estAgreee && offres.length === 0 && (
+          <p style={{ color: 'var(--muted)', marginTop: 10 }}>Aucune offre publiee pour le moment.</p>
+        )}
+
+        {offres.map((o) => (
+          <Link
+            key={o.id}
+            to={`/agence/offres/${o.id}/candidatures`}
+            className="card"
+            style={{ display: 'block', marginTop: 10, marginBottom: 0, textDecoration: 'none', color: 'inherit' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <strong>{o.titre}</strong>
+                <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                  {o.typeContrat} &middot; {o.salaireBrut.toLocaleString('fr-FR')} FCFA/mois &middot; {o._count.candidatures} candidature(s)
+                </div>
+              </div>
+              <span className={`badge ${o.statut === 'OUVERTE' ? 'green' : 'red'}`}>{o.statut}</span>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );
