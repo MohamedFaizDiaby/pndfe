@@ -111,7 +111,7 @@ cd backend
 npm install
 cp .env.example .env
 npx prisma migrate dev --name init   # cree la base SQLite + le compte admin
-npm run start:dev                     # http://localhost:3000
+npm run start:dev                     # http://localhost:4190
 ```
 
 Compte Ministere par defaut (cree par le seed) :
