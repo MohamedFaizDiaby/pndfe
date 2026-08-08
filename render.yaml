@@ -22,10 +22,14 @@ services:
     dockerContext: ./backend
     plan: free
     healthCheckPath: /health
-    disk:
-      name: pndfe-uploads
-      mountPath: /app/uploads
-      sizeGB: 1
+    # NB: le tier gratuit Render ne supporte pas les disques persistants.
+    # Consequence : les fichiers uploades (photos, pieces d'identite, PDF
+    # generes) sont stockes sur le systeme de fichiers ephemere du conteneur
+    # et seront perdus a chaque redeploiement/redemarrage. Deja documente
+    # comme limite connue dans RAPPORT_SECURITE.md. Pour un stockage
+    # persistant sans passer sur un plan payant, migrer vers un stockage
+    # objet (S3-compatible, ex: Cloudflare R2) - non fait ici par souci de
+    # rester sur les tiers gratuits pour cette premiere demo.
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -38,7 +42,7 @@ services:
       - key: PORT
         value: "4300"
       - key: UPLOADS_DIR
-        value: /app/uploads
+        value: uploads
       # A ajuster si l'URL reelle du frontend differe (voir DEPLOIEMENT.md) :
       - key: PUBLIC_APP_URL
         value: https://pndfe-frontend.onrender.com

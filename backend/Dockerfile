@@ -33,10 +33,12 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package.json ./package.json
 
 # Repertoire de stockage des fichiers uploades/generes (photos, pieces
-# d'identite, PDF). A monter en disque persistant en production (voir
-# render.yaml) - le systeme de fichiers d'un conteneur est ephemere sinon.
-ENV UPLOADS_DIR=/app/uploads
-RUN mkdir -p /app/uploads
+# d'identite, PDF). Sur le tier gratuit Render (pas de disque persistant
+# disponible), ce dossier est ephemere : perdu a chaque redeploiement. Pour
+# un stockage durable sans plan payant, migrer vers un stockage objet
+# (S3-compatible) - voir RAPPORT_SECURITE.md.
+ENV UPLOADS_DIR=uploads
+RUN mkdir -p uploads
 
 EXPOSE 4300
 

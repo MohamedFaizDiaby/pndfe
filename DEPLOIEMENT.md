@@ -109,6 +109,16 @@ ADMIN_EMAIL="ministere@pndfe.ci" ADMIN_PASSWORD="votre-mot-de-passe-fort" npx pr
   durée actuelle dans la documentation Render au moment du déploiement — elle
   a varié dans le temps). Pour un usage prolongé, passer sur un plan payant
   avant l'expiration (quelques dollars/mois).
+- **Fichiers uploadés non persistants** : le plan gratuit ne supporte pas les
+  disques persistants (Render a rejeté la configuration initiale de
+  `render.yaml`, qui en prévoyait un — déjà corrigé). Résultat : photos,
+  pièces d'identité et PDF générés sont perdus à chaque redéploiement ou
+  redémarrage du service. Sans impact sur les données en base (contrats,
+  paiements, etc.), seulement sur les fichiers. Deux solutions pour un usage
+  prolongé : passer le service `pndfe-backend` sur un plan payant (~7$/mois)
+  et réactiver un `disk:` dans `render.yaml`, ou migrer vers un stockage
+  objet (S3-compatible, ex. Cloudflare R2 — gratuit jusqu'à un certain
+  volume) — non fait ici pour rester sur des services 100% gratuits.
 - Adapté à une **démonstration** ou un **pilote limité**, pas encore à une
   mise en production nationale (voir le budget d'infrastructure réel prévu
   au cahier des charges).
