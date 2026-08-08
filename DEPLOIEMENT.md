@@ -124,18 +124,66 @@ ADMIN_EMAIL="ministere@pndfe.ci" ADMIN_PASSWORD="votre-mot-de-passe-fort" npx pr
   (~7$/mois) et ajouter un `disk:` dans `render.yaml`, ou migrer vers un
   stockage objet (S3-compatible, ex. Cloudflare R2 — gratuit jusqu'à un
   certain volume) — non fait ici pour rester sur des services 100% gratuits.
-- **Nombre de ressources gratuites limité** par compte (voir l'incident
-  rencontré lors du premier déploiement, résolu en passant à 1 seul service).
+- **Limite de ressources/provisioning par compte** : un compte Render tout
+  neuf a rencontré le message *"Free plan resource provision limit
+  exceeded"*, y compris après réduction à 1 seul service + 1 base. Cette
+  limite n'a donc pas pu être levée en réduisant le nombre de ressources —
+  elle semble liée au compte lui-même (vérification en attente, restriction
+  anti-abus sur les nouveaux comptes, etc.), pas à `render.yaml`. Si vous
+  rencontrez ce message, vérifiez les notifications de votre compte Render
+  (Billing/Settings) ou contactez leur support ; voir aussi l'alternative
+  Railway ci-dessous.
 - Adapté à une **démonstration** ou un **pilote limité**, pas encore à une
   mise en production nationale (voir le budget d'infrastructure réel prévu
   au cahier des charges).
 
-## 8. Alternative : déploiement à 2 services (Railway, Fly.io, ou Render sans limite de ressources)
+## 8. Alternative : déployer sur Railway
 
-Si votre compte n'a pas de limite de ressources gratuites, ou si vous
-préférez l'architecture classique à 2 services séparés (plus simple à faire
-évoluer indépendamment), les Dockerfiles dédiés `backend/Dockerfile` et
-`frontend/Dockerfile` restent disponibles :
+Si le blocage Render (§7) ne se résout pas rapidement de votre côté, Railway
+est une bonne alternative — même Dockerfile racine, pas de reconfiguration
+nécessaire (`railway.toml` déjà fourni). Railway fonctionne par crédit
+d'essai plutôt que par plan gratuit permanent : vérifiez les conditions
+actuelles sur [railway.com/pricing](https://railway.com/pricing) au moment
+de vous inscrire, une carte peut être demandée selon l'offre en cours.
+
+1. [railway.com](https://railway.com) → inscription (idéalement avec
+   GitHub).
+2. **New Project** → **Deploy from GitHub repo** → sélectionnez `pndfe`.
+   Railway détecte `railway.toml` et le `Dockerfile` racine automatiquement.
+3. Dans le même projet : **+ New** → **Database** → **Add PostgreSQL**.
+   Railway provisionne une base et l'expose comme service interne.
+4. Sur le service web (le déploiement du Dockerfile) → **Variables** →
+   ajoutez :
+   - `DATABASE_URL` → cliquez sur l'icône de référence et sélectionnez la
+     variable `DATABASE_URL` du service Postgres (Railway la propage
+     automatiquement, pas besoin de la copier-coller).
+   - `JWT_SECRET` → une chaîne aléatoire longue de votre choix.
+   - `JWT_EXPIRES_IN` → `7d`
+   - `UPLOADS_DIR` → `uploads`
+   - `PUBLIC_APP_URL` et `FRONTEND_URL` → voir étape 5 ci-dessous (le
+     domaine n'existe pas encore à ce stade).
+
+   Ne définissez **pas** `PORT` manuellement : Railway l'injecte
+   automatiquement et l'application le respecte déjà.
+5. Sur le service web → **Settings** → **Networking** → **Generate Domain**.
+   Railway attribue une URL du type `https://pndfe-production.up.railway.app`.
+   Copiez-la, revenez dans **Variables**, et renseignez `PUBLIC_APP_URL` et
+   `FRONTEND_URL` avec cette URL. Le service redéploie automatiquement.
+6. Une fois déployé, ouvrez `<votre-domaine>/health` pour vérifier que ça
+   répond, puis créez le compte admin. Railway propose généralement un
+   accès shell/commande depuis l'onglet du service (le libellé exact peut
+   varier selon l'interface) — exécutez-y la même commande qu'à l'étape 5 :
+   `ADMIN_EMAIL="ministere@pndfe.ci" npx prisma db seed`. Si vous ne
+   trouvez pas cette option, exécutez la commande depuis votre machine en
+   pointant `DATABASE_URL` vers la base Railway (visible dans les variables
+   du service Postgres, avec un hôte externe accessible depuis l'extérieur).
+   Terminez par les vérifications de l'étape 6.
+
+## 9. Alternative : déploiement à 2 services (Fly.io, ou toute plateforme sans limite de ressources)
+
+Si vous préférez l'architecture classique à 2 services séparés (plus simple
+à faire évoluer indépendamment), les Dockerfiles dédiés `backend/Dockerfile`
+et `frontend/Dockerfile` restent disponibles :
 
 ```bash
 # Backend
@@ -152,12 +200,13 @@ docker build -t pndfe-frontend --build-arg VITE_API_URL=https://... ./frontend
 docker run -p 8080:80 pndfe-frontend
 ```
 
-## 9. Sécurité avant tout usage réel (rappel)
+## 10. Sécurité avant tout usage réel (rappel)
 
 Voir `RAPPORT_SECURITE.md` pour le détail. En résumé, une fois en ligne :
 
-- `JWT_SECRET` est généré automatiquement par Render (`generateValue: true`)
-  — rien à faire, mais ne le partagez jamais.
+- `JWT_SECRET` : généré automatiquement par Render (`generateValue: true`)
+  sans rien à faire ; sur Railway, définissez une valeur forte vous-même
+  (§8). Ne le partagez jamais.
 - Changez le mot de passe admin dès la première connexion (voir limite
   notée à l'étape 5).
 - Un audit de sécurité indépendant reste recommandé avant toute ouverture au

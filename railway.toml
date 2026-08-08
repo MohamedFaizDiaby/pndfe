@@ -1,0 +1,15 @@
+# Configuration Railway (alternative a Render - voir DEPLOIEMENT.md).
+# Railway detecte generalement un Dockerfile a la racine automatiquement ;
+# ce fichier le rend explicite (le depot contient aussi backend/Dockerfile
+# et frontend/Dockerfile, utilises seulement pour un deploiement a 2
+# services separes).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
