@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+backend/uploads
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local
+frontend/public/main.js
+frontend/public/main.js.map
+frontend/public/main.css
+frontend/public/main.css.map
+**/*.log
+.git

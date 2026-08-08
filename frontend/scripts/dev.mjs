@@ -8,7 +8,7 @@ try {
   // pas de .env - normal en dehors du dev local
 }
 
-const apiUrl = process.env.VITE_API_URL || 'http://localhost:4300';
+const apiUrl = process.env.VITE_API_URL ?? 'http://localhost:4300';
 
 const ctx = await esbuild.context({
   entryPoints: ['src/main.tsx'],

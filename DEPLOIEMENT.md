@@ -6,25 +6,29 @@ votre place (aucun identifiant configuré dans cet environnement) : ce
 document liste les étapes que **vous** devez exécuter, dans l'ordre.
 
 Plateforme recommandée : **[Render](https://render.com)** — gratuit pour
-démarrer, pas de carte bancaire requise pour les services gratuits, hébergement
-statique natif pour le frontend, PostgreSQL managé inclus. Le projet reste
-portable vers Railway ou Fly.io (Dockerfiles fournis) si vous préférez.
+démarrer, pas de carte bancaire requise pour les services gratuits,
+PostgreSQL managé inclus.
 
-> ⚠️ **Non testé localement** : `docker build` n'a pas pu être exécuté dans cet
-> environnement (Docker Desktop indisponible — virtualisation matérielle
-> désactivée sur cette machine). Les Dockerfiles et `render.yaml` ont été
-> écrits avec soin et suivent les pratiques standard, mais **le premier
-> déploiement réel sur Render sera le premier test de bout en bout**. Suivez
-> l'étape 6 (vérification) attentivement et signalez toute erreur de build —
-> elle sera visible dans les logs Render et facile à corriger.
+**Architecture** : un seul service web sert à la fois l'API et le frontend
+(le build React est copié dans l'image Docker au moment du build). Ce choix
+n'est pas la configuration la plus "propre" dans l'absolu (2 services
+séparés serait plus classique), mais certains comptes Render limitent le
+nombre de ressources gratuites simultanées — un compte tout neuf a atteint
+cette limite avec 2 services web + 1 base. Un seul service + 1 base passe
+sous ce plafond.
+
+> ⚠️ **Non testé avec `docker build`** : Docker Desktop est indisponible sur
+> la machine de développement d'origine (virtualisation matérielle
+> désactivée). En revanche, la logique de build a été vérifiée localement
+> sans Docker (build du frontend avec URL d'API relative, inspection du
+> bundle généré) — un bug réel a d'ailleurs été détecté et corrigé de cette
+> façon avant le déploiement. Le premier déploiement Render reste le premier
+> test du Dockerfile lui-même.
 
 ## 1. Mettre le code sur GitHub
 
-Render se connecte à un dépôt Git. Si ce n'est pas déjà fait :
-
 ```bash
 cd "chemin/vers/pndfe"
-# Créez un dépôt vide sur github.com (bouton "New repository"), puis :
 git remote add origin https://github.com/<votre-compte>/pndfe.git
 git push -u origin master
 ```
@@ -32,7 +36,7 @@ git push -u origin master
 ## 2. Créer un compte Render
 
 1. Allez sur [render.com](https://render.com) → "Get Started" → inscription
-   (email ou GitHub).
+   (idéalement "Sign up with GitHub", pour connecter directement l'accès).
 2. Autorisez Render à accéder à votre dépôt GitHub `pndfe` quand demandé.
 
 ## 3. Déployer via le Blueprint (`render.yaml`)
@@ -41,28 +45,31 @@ git push -u origin master
 2. Sélectionnez le dépôt `pndfe`. Render détecte automatiquement
    `render.yaml` à la racine et propose de créer :
    - une base **PostgreSQL** (`pndfe-db`)
-   - un service web **`pndfe-backend`** (Docker, avec disque persistant pour
-     les fichiers uploadés)
-   - un site statique **`pndfe-frontend`**
-3. Cliquez **Apply**. Le premier déploiement prend quelques minutes (le
-   backend doit être buildé via Docker).
+   - un service web **`pndfe-backend`** (Docker, sert l'API et le frontend)
+3. Cliquez **Apply**. Le premier déploiement prend quelques minutes (build
+   Docker du frontend puis du backend).
 
-## 4. Vérifier les URLs réelles et les ajuster si nécessaire
+> Si vous avez suivi une version précédente de ce guide et avez déjà 3
+> ressources créées (2 services + 1 base) : supprimez le service
+> `pndfe-frontend` (Settings → Delete Service tout en bas de la page) avant
+> de relancer le Blueprint, pour repasser sous la limite de ressources
+> gratuites de votre compte.
 
-`render.yaml` suppose que vos services obtiendront les URLs
-`https://pndfe-backend.onrender.com` et `https://pndfe-frontend.onrender.com`.
-Si ces noms sont déjà pris, Render en choisit d'autres proches (ex.
-`pndfe-backend-ab12.onrender.com`).
+## 4. Vérifier l'URL réelle et l'ajuster si nécessaire
 
-**Une fois les deux services déployés**, ouvrez chacun dans le tableau de
-bord Render pour voir son URL réelle. Si elle diffère de l'hypothèse :
+`render.yaml` suppose que le service obtiendra l'URL
+`https://pndfe-backend.onrender.com`. Si ce nom est déjà pris, Render en
+choisit un autre proche (ex. `pndfe-backend-ab12.onrender.com`).
 
-1. Sur `pndfe-backend` → **Environment** → modifiez `PUBLIC_APP_URL` et
-   `FRONTEND_URL` avec la vraie URL du frontend → **Save Changes** (redéploie
-   automatiquement).
-2. Sur `pndfe-frontend` → **Environment** → modifiez `VITE_API_URL` avec la
-   vraie URL du backend → **Save Changes** (redéploie et **rebuild** le
-   frontend, nécessaire car cette valeur est injectée au moment du build).
+**Une fois déployé**, ouvrez le service dans le tableau de bord Render pour
+voir son URL réelle. Si elle diffère de l'hypothèse :
+
+1. **Environment** → modifiez `PUBLIC_APP_URL` et `FRONTEND_URL` avec la
+   vraie URL → **Save Changes**.
+2. Comme l'URL de l'API n'est plus injectée au moment du build du frontend
+   (elle est désormais relative, même origine), **aucun rebuild du frontend
+   n'est nécessaire** pour ce changement — contrairement à l'architecture à
+   2 services d'une version précédente de ce guide.
 
 ## 5. Créer le compte administrateur (Ministère)
 
@@ -90,15 +97,15 @@ ADMIN_EMAIL="ministere@pndfe.ci" ADMIN_PASSWORD="votre-mot-de-passe-fort" npx pr
 
 ## 6. Vérifier que tout fonctionne
 
-1. Ouvrez `https://<backend>.onrender.com/health` → doit répondre
-   `{"status":"UP",...}`. Si erreur, consultez les logs du service backend
-   sur Render (onglet **Logs**).
-2. Ouvrez l'URL du frontend dans un navigateur → la page d'accueil PNDFE doit
-   s'afficher.
+1. Ouvrez `https://<votre-service>.onrender.com/health` → doit répondre
+   `{"status":"UP",...}`. Si erreur, consultez les logs du service sur
+   Render (onglet **Logs**).
+2. Ouvrez `https://<votre-service>.onrender.com/` dans un navigateur → la
+   page d'accueil PNDFE doit s'afficher (servie par le même service).
 3. Connectez-vous à l'espace Ministère avec le compte créé à l'étape 5.
 4. Testez un parcours complet (inscription travailleur, inscription agence,
-   approbation, contrat) pour confirmer que le backend et la base de données
-   fonctionnent ensemble correctement.
+   approbation, contrat) pour confirmer que le backend, le frontend et la
+   base de données fonctionnent ensemble correctement.
 
 ## 7. Limites du tier gratuit Render (à connaître)
 
@@ -110,23 +117,25 @@ ADMIN_EMAIL="ministere@pndfe.ci" ADMIN_PASSWORD="votre-mot-de-passe-fort" npx pr
   a varié dans le temps). Pour un usage prolongé, passer sur un plan payant
   avant l'expiration (quelques dollars/mois).
 - **Fichiers uploadés non persistants** : le plan gratuit ne supporte pas les
-  disques persistants (Render a rejeté la configuration initiale de
-  `render.yaml`, qui en prévoyait un — déjà corrigé). Résultat : photos,
-  pièces d'identité et PDF générés sont perdus à chaque redéploiement ou
-  redémarrage du service. Sans impact sur les données en base (contrats,
-  paiements, etc.), seulement sur les fichiers. Deux solutions pour un usage
-  prolongé : passer le service `pndfe-backend` sur un plan payant (~7$/mois)
-  et réactiver un `disk:` dans `render.yaml`, ou migrer vers un stockage
-  objet (S3-compatible, ex. Cloudflare R2 — gratuit jusqu'à un certain
-  volume) — non fait ici pour rester sur des services 100% gratuits.
+  disques persistants. Résultat : photos, pièces d'identité et PDF générés
+  sont perdus à chaque redéploiement ou redémarrage du service. Sans impact
+  sur les données en base (contrats, paiements, etc.), seulement sur les
+  fichiers. Deux solutions pour un usage prolongé : passer sur un plan payant
+  (~7$/mois) et ajouter un `disk:` dans `render.yaml`, ou migrer vers un
+  stockage objet (S3-compatible, ex. Cloudflare R2 — gratuit jusqu'à un
+  certain volume) — non fait ici pour rester sur des services 100% gratuits.
+- **Nombre de ressources gratuites limité** par compte (voir l'incident
+  rencontré lors du premier déploiement, résolu en passant à 1 seul service).
 - Adapté à une **démonstration** ou un **pilote limité**, pas encore à une
   mise en production nationale (voir le budget d'infrastructure réel prévu
   au cahier des charges).
 
-## 8. Alternative : déploiement Docker générique (Railway, Fly.io, autre)
+## 8. Alternative : déploiement à 2 services (Railway, Fly.io, ou Render sans limite de ressources)
 
-Les `Dockerfile` de `backend/` et `frontend/` fonctionnent sur toute
-plateforme supportant Docker, indépendamment de Render :
+Si votre compte n'a pas de limite de ressources gratuites, ou si vous
+préférez l'architecture classique à 2 services séparés (plus simple à faire
+évoluer indépendamment), les Dockerfiles dédiés `backend/Dockerfile` et
+`frontend/Dockerfile` restent disponibles :
 
 ```bash
 # Backend
@@ -142,10 +151,6 @@ docker run -p 4300:4300 \
 docker build -t pndfe-frontend --build-arg VITE_API_URL=https://... ./frontend
 docker run -p 8080:80 pndfe-frontend
 ```
-
-Sur Railway ou Fly.io, connectez le dépôt et pointez chaque service vers le
-bon `Dockerfile` (`backend/Dockerfile` et `frontend/Dockerfile`), en
-provisionnant une base PostgreSQL via leur offre managée respective.
 
 ## 9. Sécurité avant tout usage réel (rappel)
 

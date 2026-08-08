@@ -1,5 +1,9 @@
-# PNDFE backend - image Docker generique (Render, Railway, Fly.io, ou tout
-# hebergeur supportant un Dockerfile standard).
+# PNDFE backend seul (sans le frontend). Utile si vous deployez le frontend
+# comme service separe (voir frontend/Dockerfile) - par exemple sur une
+# plateforme sans limite stricte de nombre de services gratuits. Le
+# deploiement Render par defaut (render.yaml) utilise plutot le Dockerfile
+# combine a la racine du depot (../Dockerfile), qui sert l'API et le
+# frontend depuis un seul service.
 #
 # NB: n'a pas pu etre teste localement dans cet environnement de
 # developpement (Docker Desktop indisponible - virtualisation materielle

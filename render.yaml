@@ -2,11 +2,16 @@
 # Usage : sur render.com, "New +" -> "Blueprint" -> connecter ce depot Git.
 # Voir DEPLOIEMENT.md pour le guide pas-a-pas complet.
 #
-# Hypothese de noms de service : les URLs publiques suivront le schema
-# https://<name>.onrender.com. Si les noms ci-dessous sont deja pris par un
-# autre utilisateur Render, Render choisira un nom disponible proche et il
-# faudra mettre a jour PUBLIC_APP_URL / FRONTEND_URL / VITE_API_URL en
-# consequence (voir etape de verification dans le guide).
+# Architecture : un seul service web sert a la fois l'API et le frontend
+# (build statique React copie dans l'image au moment du build - voir
+# Dockerfile a la racine du depot). Choix fait pour rester sur 2 ressources
+# gratuites au total (1 service + 1 base) plutot que 3, certains comptes
+# Render limitant le nombre de ressources gratuites simultanees.
+#
+# Hypothese de nom de service : l'URL publique suivra le schema
+# https://pndfe-backend.onrender.com. Si ce nom est deja pris, Render en
+# choisit un autre proche - dans ce cas, mettre a jour PUBLIC_APP_URL et
+# FRONTEND_URL ci-dessous avec la vraie URL (voir DEPLOIEMENT.md).
 
 databases:
   - name: pndfe-db
@@ -18,8 +23,8 @@ services:
   - type: web
     name: pndfe-backend
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     plan: free
     healthCheckPath: /health
     # NB: le tier gratuit Render ne supporte pas les disques persistants.
@@ -43,18 +48,8 @@ services:
         value: "4300"
       - key: UPLOADS_DIR
         value: uploads
-      # A ajuster si l'URL reelle du frontend differe (voir DEPLOIEMENT.md) :
+      # A ajuster si l'URL reelle du service differe (voir DEPLOIEMENT.md) :
       - key: PUBLIC_APP_URL
-        value: https://pndfe-frontend.onrender.com
+        value: https://pndfe-backend.onrender.com
       - key: FRONTEND_URL
-        value: https://pndfe-frontend.onrender.com
-
-  - type: web
-    name: pndfe-frontend
-    runtime: static
-    buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: ./frontend/dist
-    envVars:
-      # A ajuster si l'URL reelle du backend differe (voir DEPLOIEMENT.md) :
-      - key: VITE_API_URL
         value: https://pndfe-backend.onrender.com

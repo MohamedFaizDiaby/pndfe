@@ -10,7 +10,9 @@ try {
   // pas de .env - normal en CI/production
 }
 
-const apiUrl = process.env.VITE_API_URL || 'http://localhost:4300';
+// "??" et non "||" : une chaine vide (API en chemin relatif, meme origine
+// que le frontend) est une valeur valide, pas une absence de valeur.
+const apiUrl = process.env.VITE_API_URL ?? 'http://localhost:4300';
 
 await esbuild.build({
   entryPoints: ['src/main.tsx'],
