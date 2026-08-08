@@ -1,5 +1,13 @@
 import * as esbuild from 'esbuild';
 
+// Charge .env s'il existe (dev local) ; ignore silencieusement sinon
+// (les plateformes de deploiement fournissent les variables directement).
+try {
+  process.loadEnvFile('.env');
+} catch {
+  // pas de .env - normal en dehors du dev local
+}
+
 const apiUrl = process.env.VITE_API_URL || 'http://localhost:4300';
 
 const ctx = await esbuild.context({

@@ -1,13 +1,29 @@
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join, resolve } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { existsSync, mkdirSync } from 'fs';
 
-export function makeDiskStorage(subfolder: string) {
-  const dest = `uploads/${subfolder}`;
+/**
+ * Racine absolue de stockage des fichiers uploades et generes (PDF).
+ * Configurable via UPLOADS_DIR (utile pour pointer vers un disque persistant
+ * monte par le fournisseur cloud, ex: /data/uploads sur Render). Resolue une
+ * seule fois ici et reutilisee partout (upload, generation PDF, service
+ * statique) pour eviter toute divergence de chemin entre ecriture et lecture.
+ */
+export function uploadsRoot(): string {
+  return resolve(process.env.UPLOADS_DIR || 'uploads');
+}
+
+export function uploadsSubdir(subfolder: string): string {
+  const dest = join(uploadsRoot(), subfolder);
   if (!existsSync(dest)) {
     mkdirSync(dest, { recursive: true });
   }
+  return dest;
+}
+
+export function makeDiskStorage(subfolder: string) {
+  const dest = uploadsSubdir(subfolder);
   return diskStorage({
     destination: dest,
     filename: (_req, file, cb) => {

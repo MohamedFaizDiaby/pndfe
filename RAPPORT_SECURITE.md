@@ -111,7 +111,24 @@ instances derrière un load balancer.
 Comportement conforme à la configuration (limite de 10/minute) : la
 protection anti brute-force fonctionne comme prévu.
 
-## 4. Limites assumées (hors périmètre de cette revue)
+## 4. Correctifs additionnels lors de la préparation au déploiement cloud
+
+En préparant le passage au cloud (migration PostgreSQL, Dockerisation), deux
+problèmes supplémentaires ont été identifiés et corrigés :
+
+- **Bug réel de service de fichiers** : le service de fichiers statiques
+  (`ServeStaticModule`) pointait vers `dist/uploads`, un dossier qui n'existe
+  pas (les fichiers sont écrits dans `uploads/` à la racine du projet). Tous
+  les téléchargements de PDF et de photos auraient échoué en environnement de
+  production packagé différemment de la structure de développement locale.
+  Corrigé par un chemin absolu unique, configurable via `UPLOADS_DIR`,
+  partagé entre l'écriture et le service des fichiers.
+- **Mot de passe admin par défaut codé en dur** (`Admin123!`) dans le script
+  de seed : remplacé par un mot de passe aléatoire affiché une seule fois (ou
+  fourni explicitement via `ADMIN_PASSWORD`), pour éviter qu'un identifiant
+  public et documenté ne finisse en production.
+
+## 5. Limites assumées (hors périmètre de cette revue)
 
 - **Pas d'audit tiers indépendant** ni de certification — voir avertissement
   en tête de document.
@@ -119,21 +136,24 @@ protection anti brute-force fonctionne comme prévu.
   outil dédié (ex. Sentry, Datadog) non déployé dans cet environnement de
   développement local.
 - **Stockage des fichiers uploadés** (photos, pièces d'identité) sur disque
-  local, servi publiquement via une URL à jeton UUID non authentifiée :
-  raisonnable pour une démo, mais un stockage objet chiffré avec accès
-  authentifié est recommandé avant mise en production (déjà noté dans le
-  README).
-- **Secret JWT et mot de passe administrateur** par défaut, à changer avant
-  toute mise en production (déjà noté dans le README).
+  (persistant en production via `render.yaml`, mais toujours un système de
+  fichiers), servi publiquement via une URL à jeton UUID non authentifiée :
+  raisonnable pour une démo/pilote, mais un stockage objet chiffré avec accès
+  authentifié reste recommandé avant une mise en production nationale.
+- **Aucune fonctionnalité de changement de mot de passe** en libre-service —
+  à ajouter avant un usage réel prolongé.
 - **Politique de mot de passe minimale** (6 caractères) — à renforcer selon
   la politique de sécurité retenue par le Ministère.
 - **Jetons JWT longue durée (7 jours)** sans rotation/refresh token — un
   mécanisme de rafraîchissement à courte durée de vie serait préférable en
   production.
-- **`NODE_ENV`** non positionné à `production` dans cet environnement de
-  développement.
+- **`NODE_ENV`** positionné à `production` dans le Dockerfile ; à vérifier
+  sur toute autre méthode de déploiement.
+- **Dockerfiles non testés localement** (Docker Desktop indisponible sur
+  cette machine — virtualisation matérielle désactivée) : à valider dès le
+  premier déploiement réel, voir `DEPLOIEMENT.md`.
 
-## 5. Conclusion
+## 6. Conclusion
 
 Les correctifs identifiés lors de cette revue ont été appliqués et vérifiés.
 La plateforme dispose désormais d'une traçabilité complète des actions

@@ -1,0 +1,56 @@
+# Blueprint Render (Infrastructure as Code) pour deployer PNDFE en un clic.
+# Usage : sur render.com, "New +" -> "Blueprint" -> connecter ce depot Git.
+# Voir DEPLOIEMENT.md pour le guide pas-a-pas complet.
+#
+# Hypothese de noms de service : les URLs publiques suivront le schema
+# https://<name>.onrender.com. Si les noms ci-dessous sont deja pris par un
+# autre utilisateur Render, Render choisira un nom disponible proche et il
+# faudra mettre a jour PUBLIC_APP_URL / FRONTEND_URL / VITE_API_URL en
+# consequence (voir etape de verification dans le guide).
+
+databases:
+  - name: pndfe-db
+    databaseName: pndfe
+    user: pndfe
+    plan: free
+
+services:
+  - type: web
+    name: pndfe-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    disk:
+      name: pndfe-uploads
+      mountPath: /app/uploads
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pndfe-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: PORT
+        value: "4300"
+      - key: UPLOADS_DIR
+        value: /app/uploads
+      # A ajuster si l'URL reelle du frontend differe (voir DEPLOIEMENT.md) :
+      - key: PUBLIC_APP_URL
+        value: https://pndfe-frontend.onrender.com
+      - key: FRONTEND_URL
+        value: https://pndfe-frontend.onrender.com
+
+  - type: web
+    name: pndfe-frontend
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      # A ajuster si l'URL reelle du backend differe (voir DEPLOIEMENT.md) :
+      - key: VITE_API_URL
+        value: https://pndfe-backend.onrender.com

@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=.env scripts/dev.mjs",
-    "build": "node --env-file=.env scripts/build.mjs"
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs"
   },
   "dependencies": {
     "axios": "^1.7.9",

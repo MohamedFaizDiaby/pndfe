@@ -3,21 +3,25 @@
 // PNDFE - Etape 3 : Paiement des salaires (Mobile Money simule) + bulletins de paie
 // PNDFE - Mise en relation : offres d'emploi publiees par les agences, candidatures des travailleurs
 // PNDFE - Etape 4 : journal d'audit (tracabilite des actions sensibles)
-// NB: SQLite est utilise en developpement local (aucun serveur a installer).
-// En production, changer "provider" en "postgresql" et DATABASE_URL vers l'instance
-// PostgreSQL du Ministere - le reste du schema reste identique.
+// PostgreSQL en developpement (via docker-compose, voir backend/docker-compose.yml)
+// et en production (base managee du fournisseur cloud). Le schema a d'abord
+// ete developpe sous SQLite (aucun serveur a installer) puis migre ici pour
+// le passage au cloud - voir DEPLOIEMENT.md.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// SQLite ne supporte pas les enums natifs Prisma : les valeurs sont stockees
-// en String et validees cote application via src/common/enums.ts (TS enums).
+// Les statuts restent des String (et non des enums Postgres natifs) pour ne
+// pas re-ecrire les migrations existantes ni le code applicatif qui les
+// manipule deja via src/common/enums.ts (TS enums) - un changement purement
+// cosmetique, sans benefice fonctionnel, qui aurait ajoute du risque inutile
+// a cette migration.
 // Role: TRAVAILLEUR | AGENCE | ADMIN
 // StatutAgrement: EN_ATTENTE | APPROUVE | REJETE
 // StatutVerificationIdentite: EN_ATTENTE | VERIFIE | REJETE

@@ -1,0 +1,20 @@
+# PostgreSQL local pour le developpement (equivalent de la base managee
+# utilisee en production sur le fournisseur cloud). Usage :
+#   docker compose up -d
+#   cp .env.example .env   # DATABASE_URL pointe deja vers ce conteneur
+#   npx prisma migrate dev
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pndfe
+      POSTGRES_PASSWORD: pndfe_dev_local
+      POSTGRES_DB: pndfe
+    ports:
+      - "5432:5432"
+    volumes:
+      - pndfe_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  pndfe_postgres_data:

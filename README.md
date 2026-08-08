@@ -99,13 +99,17 @@ original).
 
 ## Stack technique
 
-- **Backend** : NestJS + TypeScript, Prisma ORM, SQLite en developpement local
-  (basculer vers PostgreSQL en production en changeant `provider` dans
-  `backend/prisma/schema.prisma` et `DATABASE_URL`).
+- **Backend** : NestJS + TypeScript, Prisma ORM, **PostgreSQL** (local via
+  Docker Compose, managee en production - voir `DEPLOIEMENT.md`). Le projet a
+  d'abord ete developpe sous SQLite (aucun serveur a installer) avant d'etre
+  migre vers PostgreSQL pour permettre un deploiement cloud reel.
 - **Frontend** : React + TypeScript, bundle via esbuild (voir note ci-dessous),
   routage par hash (`react-router-dom` en mode `HashRouter`).
-- Authentification JWT, upload de fichiers local (`backend/uploads`), QR codes
-  generes avec la librairie `qrcode`, scan via `html5-qrcode`.
+- Authentification JWT, upload de fichiers (`backend/uploads`, a monter en
+  disque persistant en production), QR codes generes avec la librairie
+  `qrcode`, scan via `html5-qrcode`.
+- `Dockerfile` pour le backend et le frontend, `render.yaml` (blueprint de
+  deploiement Render en un clic).
 
 ### Pourquoi esbuild plutot que Vite ?
 
@@ -121,6 +125,9 @@ de l'application (seuls les scripts de build changeraient).
 
 - Node.js 18+ (ce projet a ete developpe et teste avec Node 24 portable, car
   l'installeur MSI officiel necessite des droits administrateur).
+- Docker (pour PostgreSQL local via Docker Compose). Non teste dans
+  l'environnement de developpement d'origine (virtualisation desactivee sur
+  cette machine) mais requis pour la plupart des configurations standard.
 
 ## Demarrage
 
@@ -128,17 +135,17 @@ de l'application (seuls les scripts de build changeraient).
 
 ```bash
 cd backend
+docker compose up -d          # PostgreSQL local (voir docker-compose.yml)
 npm install
 cp .env.example .env
-npx prisma migrate dev --name init   # cree la base SQLite + le compte admin
-npm run start:dev                     # http://localhost:4300
+npx prisma migrate dev         # applique les migrations existantes
+npm run start:dev              # http://localhost:4300
+ADMIN_EMAIL="ministere@pndfe.ci" npx prisma db seed   # cree le compte admin
 ```
 
-Compte Ministere par defaut (cree par le seed) :
-- email : `ministere@pndfe.ci`
-- mot de passe : `Admin123!`
-
-**A changer immediatement avant toute mise en production.**
+Le mot de passe du compte admin est genere aleatoirement et affiche une
+seule fois dans la console (ou definissable via `ADMIN_PASSWORD`, voir
+`DEPLOIEMENT.md`).
 
 ### Frontend
 
@@ -148,14 +155,26 @@ npm install
 npm run dev    # http://localhost:5190
 ```
 
+## Deploiement cloud
+
+Voir [`DEPLOIEMENT.md`](./DEPLOIEMENT.md) pour le guide pas-a-pas complet
+(Render recommande, `render.yaml` fourni ; alternative Docker generique pour
+Railway/Fly.io).
+
 ## Structure du projet
 
 ```
 pndfe/
+  render.yaml         blueprint de deploiement Render
+  DEPLOIEMENT.md       guide de deploiement cloud pas-a-pas
+  RAPPORT_SECURITE.md  audit de securite et resultats des tests de charge
   backend/     API NestJS (auth, travailleurs, agences, contrats, paiements, offres, admin)
+    Dockerfile
+    docker-compose.yml PostgreSQL local
     prisma/    schema.prisma, migrations, seed
     src/
   frontend/    Application web React (mobile-first)
+    Dockerfile
     src/
       pages/
       components/
@@ -169,11 +188,14 @@ Voir [`RAPPORT_SECURITE.md`](./RAPPORT_SECURITE.md) pour le detail complet
 (revue de code, corrections appliquees, resultats des tests de charge). En
 resume, avant toute mise en production :
 
-- Changer `JWT_SECRET` et le mot de passe admin par defaut.
-- Passer de SQLite a PostgreSQL.
+- Definir `ADMIN_PASSWORD` (ou noter le mot de passe genere aleatoirement) et
+  le changer regulierement — aucune fonctionnalite de changement de mot de
+  passe en libre-service n'existe encore dans l'application.
+- `JWT_SECRET` : genere automatiquement sur Render (`generateValue: true`) ;
+  sur une autre plateforme, definir une valeur forte et unique.
 - Stocker les fichiers uploades (photos, pieces d'identite) sur un stockage
-  objet chiffre (ex: S3) plutot que sur le disque local.
+  objet chiffre (ex: S3) plutot que sur disque, meme persistant.
 - Faire realiser un audit de securite independant (pentest) avant ouverture
   au public.
-- Definir `FRONTEND_URL` avec l'URL publique reelle (le CORS est deja
-  restreint a cette origine).
+- `FRONTEND_URL` doit correspondre a l'URL publique reelle du frontend (le
+  CORS y est restreint) — voir `DEPLOIEMENT.md` etape 4.

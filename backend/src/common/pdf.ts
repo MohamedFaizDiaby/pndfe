@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { createWriteStream } from 'fs';
 import { join } from 'path';
+import { uploadsSubdir } from './file-storage';
 
 export interface ContratPdfData {
   contratId: string;
@@ -36,9 +37,7 @@ const money = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
  * Retourne l'URL publique relative (servie par ServeStaticModule sur /uploads).
  */
 export function generateContratPdf(data: ContratPdfData): Promise<string> {
-  const dir = 'uploads/contrats';
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-
+  const dir = uploadsSubdir('contrats');
   const filename = `${data.contratId}.pdf`;
   const filepath = join(dir, filename);
 
@@ -147,9 +146,7 @@ const methodeLabel = (m: string) => (m === 'ORANGE_MONEY' ? 'Orange Money' : 'MT
  * Genere le bulletin de paie PDF et le sauvegarde sous uploads/bulletins/<id>.pdf.
  */
 export function generateBulletinPdf(data: BulletinPdfData): Promise<string> {
-  const dir = 'uploads/bulletins';
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-
+  const dir = uploadsSubdir('bulletins');
   const filename = `${data.paiementId}.pdf`;
   const filepath = join(dir, filename);
 
